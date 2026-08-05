@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — this is the ONLY place hex values and font choices should live.
+ * See MD Files/design.md for what each token means and how to swap them.
+ */
+:root {
+  --color-primary: #2c3e50;
+  --color-secondary: #babaff;
+  --color-tertiary: #EBE5D8;
+  --color-quaternary: #ede6d8;
+  --color-quinary: #b8965a;
+
+  --background: var(--color-tertiary);
+  --foreground: var(--color-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-tertiary: var(--color-tertiary);
+  --color-quaternary: var(--color-quaternary);
+  --color-quinary: var(--color-quinary);
+
+  --font-primary: var(--font-primary);
+  --font-secondary: var(--font-secondary);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@layer utilities {
+  /*
+   * Liquid Glass Lite — pure CSS glassmorphism (no SVG filters / WebGL).
+   * Use over photos or colored surfaces for the glass card look from the spec.
+   *
+   * The recipe layers four things to read as an actual curved-glass
+   * material rather than a flat tinted rectangle:
+   *   1. A vertical highlight gradient (bright sheen at the top, dimmer
+   *      through the middle, a soft secondary glow at the bottom) instead
+   *      of one flat translucent color.
+   *   2. Backdrop blur+saturate, so whatever's behind reads through soft
+   *      and slightly richer in color — the "frosted" part.
+   *   3. An inset highlight at the top edge and an inset shadow at the
+   *      bottom edge, which together read as a subtle bevel/thickness.
+   *   4. A tight contact shadow plus a soft diffuse shadow, so the piece
+   *      reads as sitting slightly above the page rather than stuck to it.
+   */
+  .liquid-glass-lite {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.2) 100%
+      ),
+      rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+
+    border: 1px solid rgba(255, 255, 255, 0.4);
+
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px 0 rgba(0, 0, 0, 0.04),
+      0 12px 32px 0 rgba(0, 0, 0, 0.12);
+
+    /* GPU performance isolation — promote a layer only where one is animating */
+    contain: paint;
+    will-change: transform;
+  }
+
+  /*
+   * Same look, no will-change. Use this on grids/lists (hotel cards, dining
+   * cards, etc.) — leaving will-change: transform on many simultaneous nodes
+   * forces the GPU to keep a composited layer per card even when idle.
+   */
+  .liquid-glass-lite-static {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.2) 100%
+      ),
+      rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px 0 rgba(0, 0, 0, 0.04),
+      0 12px 32px 0 rgba(0, 0, 0, 0.12);
+    contain: paint;
+  }
+
+  /*
+   * Brighter/more opaque variant — for a glass element that itself sits on
+   * top of another glass surface (e.g. the sliding highlight behind the
+   * active link in the nav pill). It needs more contrast than the base
+   * recipe to read as a distinct, raised layer rather than blending in.
+   */
+  .liquid-glass-lite-active {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 255, 255, 0.24) 45%,
+        rgba(255, 255, 255, 0.38) 100%
+      ),
+      rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.07),
+      0 4px 12px 0 rgba(0, 0, 0, 0.1);
+    contain: paint;
+  }
+
+  /*
+   * Same five-layer recipe as .liquid-glass-lite-static, with a whisper of
+   * the secondary brand color (#BABAFF) in the fill only. Per the spec, the
+   * specular rim/border and the inset bevels stay white/neutral regardless
+   * of tint — that's what reads as "light on glass" — so only the base fill
+   * and gradient carry color here. An earlier version tinted the border and
+   * shadows too, which made it read as flat pastel plastic instead of glass.
+   *
+   * Bright top highlight — use this on whatever surface is actually at the
+   * "top" of a glass composition and should catch the light (e.g. the
+   * password-gate envelope's flap).
+   */
+  .liquid-glass-lite-secondary {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(186, 186, 255, 0.14) 45%,
+        rgba(186, 186, 255, 0.24) 100%
+      ),
+      rgba(186, 186, 255, 0.14);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px 0 rgba(0, 0, 0, 0.04),
+      0 12px 32px 0 rgba(0, 0, 0, 0.12);
+    contain: paint;
+  }
+
+  /*
+   * Flat variant — same border/blur/shadow, but without the bright top
+   * highlight. Use this for a glass surface that sits *below* another glass
+   * element that already owns the highlight (e.g. the envelope's body,
+   * directly under the flap): giving both their own independent 0%-100%
+   * gradient means the body's "top" lands in the visual middle of the whole
+   * composition, not its actual top, so a bright stop there just reads as a
+   * jarring blank patch at the corners the flap doesn't cover.
+   */
+  .liquid-glass-lite-secondary-flat {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(196, 196, 255, 0.2) 0%,
+        rgba(186, 186, 255, 0.16) 50%,
+        rgba(186, 186, 255, 0.26) 100%
+      ),
+      rgba(186, 186, 255, 0.16);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px 0 rgba(0, 0, 0, 0.04),
+      0 12px 32px 0 rgba(0, 0, 0, 0.12);
+    contain: paint;
+  }
+
+  /* Fallback for browsers without backdrop-filter support, so glass panels
+     stay legible instead of turning invisible. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .liquid-glass-lite,
+    .liquid-glass-lite-static,
+    .liquid-glass-lite-active {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .liquid-glass-lite-secondary,
+    .liquid-glass-lite-secondary-flat {
+      background: rgba(186, 186, 255, 0.5);
+    }
+  }
+
+  /*
+   * Frame-only variant — border highlight + shadow, no blur/background.
+   * Use for wrappers around WebGL/canvas/video content: backdrop-filter
+   * on an ancestor of a WebGL canvas can blank out the canvas's own
+   * rendering in some browsers (this broke the MapLibre basemap tiles).
+   */
+  .liquid-glass-lite-frame {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px 0 rgba(0, 0, 0, 0.04),
+      0 12px 32px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  /* Wrong-password shake — used by PasswordGate on failed submit. */
+  @keyframes shake {
+    10%,
+    90% {
+      transform: translateX(-1px);
+    }
+    20%,
+    80% {
+      transform: translateX(2px);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translateX(-4px);
+    }
+    40%,
+    60% {
+      transform: translateX(4px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+}
