@@ -191,7 +191,7 @@ export default function PasswordGate({ onUnlock }: PasswordGateProps) {
                   spellCheck={false}
                   data-lpignore="true"
                   data-1p-ignore="true"
-                  style={!showPassword ? { WebkitTextSecurity: "disc" } : undefined}
+                  style={!showPassword ? ({ WebkitTextSecurity: "disc" } as any) : undefined}
                   className="w-full border-0 border-b border-primary bg-transparent py-1 pr-5 text-center font-secondary text-xs tracking-[0.3em] text-quinary caret-quinary placeholder:tracking-normal placeholder:text-primary/40 focus:border-quinary focus:outline-none"
                 />
                 <button
