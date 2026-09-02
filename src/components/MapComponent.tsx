@@ -63,7 +63,7 @@ export default function MapComponent({ locations }: MapComponentProps) {
       <NavigationControl position="top-right" />
 
       {locations.map((location) => {
-        const isSpecialCategory = ["airport", "hotel", "venue"].includes(
+        const isSpecialCategory = ["airport", "hotel"].includes(
           location.category
         );
         const bgColor = isSpecialCategory

@@ -2,7 +2,7 @@
  * Monogram SVG — inlined for dynamic coloring via fill="currentColor".
  * The source of truth is public/logo/monogram.svg; this component
  * extracts and inlines the path so CSS color classes can recolor it.
- * Used in Navbar (text-primary) and PasswordGate seal (text-tertiary).
+ * Used in Navbar (text-primary) and LoginGate seal (text-tertiary).
  */
 
 type MonogramProps = {

@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PasswordGate from "@/components/PasswordGate";
-
-const STORAGE_KEY = "vr-wedding-auth";
+import LoginGate from "@/components/LoginGate";
+import { getGuestSession } from "@/lib/guestSession";
 
 export default function SiteGate({ children }: { children: React.ReactNode }) {
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   useEffect(() => {
-    if (window.localStorage.getItem(STORAGE_KEY) === "true") {
+    if (getGuestSession()) {
       setIsUnlocked(true);
     }
   }, []);
@@ -18,7 +17,7 @@ export default function SiteGate({ children }: { children: React.ReactNode }) {
     <>
       {children}
       {!isUnlocked && (
-        <PasswordGate onUnlock={() => setIsUnlocked(true)} />
+        <LoginGate onUnlock={() => setIsUnlocked(true)} />
       )}
     </>
   );

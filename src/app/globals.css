@@ -217,7 +217,7 @@ body {
       0 12px 32px 0 rgba(0, 0, 0, 0.12);
   }
 
-  /* Wrong-password shake — used by PasswordGate on failed submit. */
+  /* No-match shake — used by LoginGate on failed submit. */
   @keyframes shake {
     10%,
     90% {

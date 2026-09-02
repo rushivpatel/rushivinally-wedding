@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import Monogram from "@/components/Monogram";
+import { setGuestSession } from "@/lib/guestSession";
 
-const CORRECT_PASSWORD = "VR2027";
-const STORAGE_KEY = "vr-wedding-auth";
-
-type PasswordGateProps = {
+type LoginGateProps = {
   onUnlock?: () => void;
 };
 
@@ -23,9 +20,9 @@ const SPRING_EASE = "cubic-bezier(0.34, 1.56, 0.64, 1)";
  *  apex at exactly the top flap's point, the way a real envelope's flaps meet. */
 const FLAP_HEIGHT = "7rem";
 
-export default function PasswordGate({ onUnlock }: PasswordGateProps) {
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+export default function LoginGate({ onUnlock }: LoginGateProps) {
+  const [query, setQuery] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [stage, setStage] = useState<Stage>("form");
@@ -50,19 +47,32 @@ export default function PasswordGate({ onUnlock }: PasswordGateProps) {
     window.setTimeout(() => onUnlock?.(), FLAP_MS + REVEAL_MS);
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (isSubmitting) return;
 
-    if (password.trim().toUpperCase() === CORRECT_PASSWORD) {
-      window.localStorage.setItem(STORAGE_KEY, "true");
-      setError(false);
-      beginUnlockSequence();
-      return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const { match } = await response.json();
+
+      if (match) {
+        setGuestSession(match);
+        setError(false);
+        beginUnlockSequence();
+        return;
+      }
+
+      setError(true);
+      setIsShaking(true);
+      window.setTimeout(() => setIsShaking(false), 500);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setError(true);
-    setIsShaking(true);
-    window.setTimeout(() => setIsShaking(false), 500);
   }
 
   const isFormVisible = stage === "form";
@@ -147,7 +157,7 @@ export default function PasswordGate({ onUnlock }: PasswordGateProps) {
           </div>
         </div>
 
-        {/* Password form — sits on the envelope face below the flap. Carries
+        {/* Login form — sits on the envelope face below the flap. Carries
             no background of its own: the face behind it already provides one
             continuous surface. */}
         <div
@@ -160,61 +170,44 @@ export default function PasswordGate({ onUnlock }: PasswordGateProps) {
         >
           <div className="relative z-10 flex flex-col items-center gap-3 px-6 pb-6 pt-9 text-center">
             <p className="font-primary text-sm leading-snug text-primary sm:text-base">
-              Please enter the secret to attend
+              Please enter your name or email to view your invitation to
               <br />
               Vinally &amp; Rushi&apos;s Wedding
             </p>
 
-            {/* Input and submit sit on one row — the password is short, so a
-                narrow field plus an inline button keeps the envelope's bottom
-                section shallow and closer to a real envelope's proportions. */}
+            {/* Input and submit sit on one row to keep the envelope's
+                bottom section shallow and closer to a real envelope's
+                proportions. */}
             <div className="flex items-center gap-3">
-              <div className="relative w-[150px]">
-                <input
-                  ref={inputRef}
-                  // Always type="text" — using type="password" makes Chrome treat
-                  // this as an account sign-up field and show its native "suggest
-                  // a strong password" dropdown, which can leave the input stuck
-                  // unclickable after being dismissed. Masking is faked with the
-                  // -webkit-text-security CSS trick instead, which keeps this
-                  // field completely off the browser's password-manager radar.
-                  type="text"
-                  value={password}
-                  onChange={(event) => {
-                    setPassword(event.target.value);
-                    if (error) setError(false);
-                  }}
-                  placeholder="Password"
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  style={!showPassword ? ({ WebkitTextSecurity: "disc" } as any) : undefined}
-                  className="w-full border-0 border-b border-primary bg-transparent py-1 pr-5 text-center font-secondary text-xs tracking-[0.3em] text-quinary caret-quinary placeholder:tracking-normal placeholder:text-primary/40 focus:border-quinary focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-primary/40 transition-colors hover:text-quinary"
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  if (error) setError(false);
+                }}
+                placeholder="Name or Email"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                data-lpignore="true"
+                data-1p-ignore="true"
+                className="w-[180px] border-0 border-b border-primary bg-transparent py-1 text-center font-secondary text-xs tracking-wide text-quinary caret-quinary placeholder:text-primary/40 focus:border-quinary focus:outline-none"
+              />
 
               <button
                 type="submit"
-                className="liquid-glass-lite-secondary-flat shrink-0 rounded-full bg-quinary px-5 py-1.5 font-secondary text-xs tracking-wide text-tertiary font-bold shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95"
+                disabled={isSubmitting}
+                className="liquid-glass-lite-secondary-flat shrink-0 rounded-full bg-quinary px-5 py-1.5 font-secondary text-xs tracking-wide text-tertiary font-bold shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95 disabled:opacity-60"
               >
-                Enter
+                {isSubmitting ? "..." : "Enter"}
               </button>
             </div>
 
             {error && (
               <p className="-mt-1 text-xs tracking-wide text-red-500/80 font-bold">
-                Incorrect password. Please try again.
+                We couldn&apos;t find your invitation. Please check your name or email.
               </p>
             )}
           </div>

@@ -1,7 +1,8 @@
 import Image from "next/image";
-import { locations } from "@/data/locations";
+import { getLocations } from "@/data/locations";
 
-export default function TravelPage() {
+export default async function TravelPage() {
+  const locations = await getLocations();
   const airports = locations.filter((loc) => loc.category === "airport");
 
   return (

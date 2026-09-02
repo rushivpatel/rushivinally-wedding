@@ -6,8 +6,8 @@ import { formatDateShort } from "@/lib/formatDate";
 
 const HERO_IMAGES = ["hero-1.jpg", "hero-2.jpg", "hero-3.jpg"];
 
-export default function Home() {
-  const primaryEvent = getPrimaryEvent();
+export default async function Home() {
+  const primaryEvent = await getPrimaryEvent();
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-6 py-4 text-center sm:py-6">
