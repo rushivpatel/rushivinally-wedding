@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Monogram from "@/components/Monogram";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { getGuestSession, GUEST_SESSION_EVENT } from "@/lib/guestSession";
 
 const NAV_LINKS = [
   { href: "/", label: "Welcome" },
@@ -15,6 +16,10 @@ const NAV_LINKS = [
   { href: "/rsvp", label: "RSVP" },
 ];
 
+/** Hidden from guests flagged simple_invite — typically distant family
+ *  invited to only 1-2 events who won't need trip-planning info. */
+const SIMPLE_INVITE_HIDDEN_HREFS = ["/travel", "/accommodation", "/things-to-do"];
+
 type IndicatorRect = { left: number; width: number };
 
 export default function Navbar() {
@@ -22,11 +27,25 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [indicator, setIndicator] = useState<IndicatorRect | null>(null);
+  const [navLinks, setNavLinks] = useState(NAV_LINKS);
 
   const pillRef = useRef<HTMLUListElement>(null);
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  const activeIndex = NAV_LINKS.findIndex((link) => link.href === pathname);
+  useEffect(() => {
+    function applySession() {
+      const session = getGuestSession();
+      if (!session?.isSimpleInvite) return;
+
+      setNavLinks(NAV_LINKS.filter((link) => !SIMPLE_INVITE_HIDDEN_HREFS.includes(link.href)));
+    }
+
+    applySession();
+    window.addEventListener(GUEST_SESSION_EVENT, applySession);
+    return () => window.removeEventListener(GUEST_SESSION_EVENT, applySession);
+  }, []);
+
+  const activeIndex = navLinks.findIndex((link) => link.href === pathname);
   const targetIndex = hoveredIndex ?? (activeIndex === -1 ? null : activeIndex);
 
   // Measures the target link's position relative to the pill so the
@@ -81,7 +100,7 @@ export default function Navbar() {
             />
           )}
 
-          {NAV_LINKS.map((link, index) => {
+          {navLinks.map((link, index) => {
             const isCurrent = pathname === link.href;
             const isHighlighted = isCurrent || hoveredIndex === index;
             return (
@@ -118,7 +137,7 @@ export default function Navbar() {
 
       {isOpen && (
         <ul className="liquid-glass-lite flex flex-col gap-1 border-t border-quinary/20 px-6 py-4 md:hidden">
-          {NAV_LINKS.map((link) => {
+          {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <li key={link.href}>

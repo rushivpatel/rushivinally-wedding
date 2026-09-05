@@ -57,3 +57,14 @@ export function formatEventTime(dateTime: string): string {
     minute: "2-digit",
   }).format(new Date(dateTime));
 }
+
+/** e.g. "2027-02-19" — a sortable/comparable calendar-day key in
+ *  Pacific time, for grouping events that fall on the same day. */
+export function getEventDateKey(dateTime: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(dateTime));
+}

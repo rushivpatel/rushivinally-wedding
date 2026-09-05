@@ -1,10 +1,16 @@
 const STORAGE_KEY = "vr-wedding-guest";
 
+/** Dispatched right after login writes a session, so already-mounted
+ *  components (e.g. ScheduleClient, mounted behind the gate before
+ *  login happens) can react without needing a page reload. */
+export const GUEST_SESSION_EVENT = "vr-guest-session-updated";
+
 export type GuestSession = {
   guestId: string;
   householdId: string;
   guestName: string;
   invitedEventSlugs: string[];
+  isSimpleInvite: boolean;
 };
 
 export function getGuestSession(): GuestSession | null {
@@ -26,4 +32,5 @@ export function getGuestSession(): GuestSession | null {
 
 export function setGuestSession(session: GuestSession): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  window.dispatchEvent(new Event(GUEST_SESSION_EVENT));
 }

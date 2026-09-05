@@ -6,6 +6,7 @@ type GuestRow = {
   full_name: string;
   email: string | null;
   household_id: string | null;
+  simple_invite: boolean;
 };
 
 export async function POST(request: Request) {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
 
   const { data: guests, error } = await supabaseServer
     .from("guests")
-    .select("id, full_name, email, household_id");
+    .select("id, full_name, email, household_id, simple_invite");
 
   if (error) {
     return NextResponse.json({ match: null }, { status: 500 });
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
       householdId: guest.household_id,
       guestName: guest.full_name,
       invitedEventSlugs,
+      isSimpleInvite: guest.simple_invite,
     },
   });
 }
