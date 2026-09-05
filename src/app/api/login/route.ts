@@ -5,7 +5,7 @@ type GuestRow = {
   id: string;
   full_name: string;
   email: string | null;
-  household_id: string;
+  household_id: string | null;
 };
 
 export async function POST(request: Request) {
