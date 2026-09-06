@@ -18,6 +18,22 @@ type DayGroup = {
   events: WeddingEvent[];
 };
 
+/** For calendar purposes an event should start at its earliest known
+ *  time (e.g. Baraat, not the Wedding Ceremony anchor time) and run
+ *  through its last segment plus a buffer, rather than a flat 2 hours
+ *  from the anchor time which could end before a later segment starts. */
+function getCalendarWindow(event: WeddingEvent): { dateTime: string; durationHours: number } {
+  const times = [event.dateTime, ...event.segments.map((segment) => segment.dateTime)].map(
+    (t) => new Date(t).getTime()
+  );
+  const start = Math.min(...times);
+  const end = Math.max(...times);
+  const bufferHours = 2;
+  const durationHours = (end - start) / (1000 * 60 * 60) + bufferHours;
+
+  return { dateTime: new Date(start).toISOString(), durationHours };
+}
+
 function groupByDay(events: WeddingEvent[]): DayGroup[] {
   const groups: DayGroup[] = [];
 
@@ -96,10 +112,12 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                 <p className="font-secondary text-base italic text-primary/70">{event.locationAddress}</p>
               </div>
 
-              <div className="mt-2 space-y-1">
-                <p className="font-secondary text-base text-primary">Attire | {event.attireColors}</p>
-                <p className="font-secondary text-base text-primary">{event.attireType}</p>
-              </div>
+              {/* Attire hidden until real attire_colors/attire_type values are
+                  set in Supabase — currently placeholder text. Re-add:
+                  <div className="mt-2 space-y-1">
+                    <p className="font-secondary text-base text-primary">Attire | {event.attireColors}</p>
+                    <p className="font-secondary text-base text-primary">{event.attireType}</p>
+                  </div> */}
 
               <div className="mt-4 flex items-center gap-4">
                 <button
@@ -107,7 +125,7 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                   onClick={() =>
                     downloadIcsFile({
                       name: event.name,
-                      dateTime: event.dateTime,
+                      ...getCalendarWindow(event),
                       locationName: event.locationName,
                       locationAddress: event.locationAddress,
                       attireType: event.attireType,

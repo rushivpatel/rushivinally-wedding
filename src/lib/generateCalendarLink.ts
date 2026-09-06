@@ -33,9 +33,13 @@ function buildIcsContent({
   const start = new Date(dateTime);
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
 
+  // Attire hidden until real attire_colors/attire_type values are set in
+  // Supabase — currently placeholder text. Re-add:
+  //   if (attireType) descriptionParts.push(`Dress Code: ${attireType}`);
+  //   if (attireColors) descriptionParts.push(`Colors: ${attireColors}`);
   const descriptionParts: string[] = [];
-  if (attireType) descriptionParts.push(`Dress Code: ${attireType}`);
-  if (attireColors) descriptionParts.push(`Colors: ${attireColors}`);
+  void attireType;
+  void attireColors;
 
   const lines = [
     "BEGIN:VCALENDAR",
