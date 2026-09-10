@@ -24,6 +24,7 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
   const [query, setQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(false);
+  const [ambiguous, setAmbiguous] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [stage, setStage] = useState<Stage>("form");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,16 +59,18 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       });
-      const { match } = await response.json();
+      const { match, ambiguous: isAmbiguous } = await response.json();
 
       if (match) {
         setGuestSession(match);
         setError(false);
+        setAmbiguous(false);
         beginUnlockSequence();
         return;
       }
 
       setError(true);
+      setAmbiguous(Boolean(isAmbiguous));
       setIsShaking(true);
       window.setTimeout(() => setIsShaking(false), 500);
     } finally {
@@ -186,6 +189,7 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
                 onChange={(event) => {
                   setQuery(event.target.value);
                   if (error) setError(false);
+                  if (ambiguous) setAmbiguous(false);
                 }}
                 placeholder="Name or Email"
                 autoComplete="off"
@@ -206,8 +210,15 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
             </div>
 
             {error && (
-              <p className="-mt-1 text-xs tracking-wide text-red-500/80 font-bold">
-                We couldn&apos;t find your invitation. Please check your name or email.
+              <p className="-mt-1 max-w-[260px] text-xs tracking-wide text-red-500/80 font-bold">
+                {ambiguous ? (
+                  <>
+                    We found multiple people with that name — please enter your email
+                    instead, or try the name of someone else in your household.
+                  </>
+                ) : (
+                  "We couldn't find your invitation. Please check your name or email."
+                )}
               </p>
             )}
           </div>

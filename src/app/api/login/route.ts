@@ -27,11 +27,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ match: null }, { status: 500 });
   }
 
-  const guest = (guests as GuestRow[] | null)?.find(
+  const matches = (guests as GuestRow[] | null)?.filter(
     (g) =>
       g.full_name.trim().toLowerCase() === normalized ||
       (g.email && g.email.trim().toLowerCase() === normalized)
-  );
+  ) ?? [];
+
+  if (matches.length > 1) {
+    return NextResponse.json({ match: null, ambiguous: true });
+  }
+
+  const guest = matches[0];
 
   if (!guest) {
     return NextResponse.json({ match: null });
