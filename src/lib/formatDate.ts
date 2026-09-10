@@ -14,15 +14,20 @@ export function formatDateShort(dateTime: string): string {
   return `${lookup.month}.${lookup.day}.${lookup.year}`;
 }
 
+const DEFAULT_TIME_ZONE = "America/Los_Angeles";
+
 /**
- * e.g. "Saturday, February 20, 2027 · 10:00 AM" — computed against
- * Pacific time regardless of the viewer's (or server's) own timezone.
+ * e.g. "Saturday, February 20, 2027 · 10:00 AM" — computed in the given
+ * IANA timezone (defaults to Pacific). Each event carries its own
+ * timezone rather than everything being converted to Pacific, since a
+ * guest attending an out-of-town event should see that event's own
+ * local time, not a Pacific-converted equivalent.
  */
-export function formatEventDateTime(dateTime: string): string {
+export function formatEventDateTime(dateTime: string, timeZone: string = DEFAULT_TIME_ZONE): string {
   const date = new Date(dateTime);
 
   const datePart = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
+    timeZone,
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -30,7 +35,7 @@ export function formatEventDateTime(dateTime: string): string {
   }).format(date);
 
   const timePart = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
+    timeZone,
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
@@ -38,10 +43,11 @@ export function formatEventDateTime(dateTime: string): string {
   return `${datePart} · ${timePart}`;
 }
 
-/** e.g. "Saturday, February 20, 2027" — date only, no time. */
-export function formatEventDate(dateTime: string): string {
+/** e.g. "Saturday, February 20, 2027" — date only, no time, in the
+ *  given IANA timezone (defaults to Pacific). */
+export function formatEventDate(dateTime: string, timeZone: string = DEFAULT_TIME_ZONE): string {
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
+    timeZone,
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -49,20 +55,22 @@ export function formatEventDate(dateTime: string): string {
   }).format(new Date(dateTime));
 }
 
-/** e.g. "10:00 AM" — time only, no date. */
-export function formatEventTime(dateTime: string): string {
+/** e.g. "10:00 AM" — time only, no date, in the given IANA timezone
+ *  (defaults to Pacific). */
+export function formatEventTime(dateTime: string, timeZone: string = DEFAULT_TIME_ZONE): string {
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
+    timeZone,
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(dateTime));
 }
 
-/** e.g. "2027-02-19" — a sortable/comparable calendar-day key in
- *  Pacific time, for grouping events that fall on the same day. */
-export function getEventDateKey(dateTime: string): string {
+/** e.g. "2027-02-19" — a sortable/comparable calendar-day key in the
+ *  given IANA timezone (defaults to Pacific), for grouping events that
+ *  fall on the same day. */
+export function getEventDateKey(dateTime: string, timeZone: string = DEFAULT_TIME_ZONE): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Los_Angeles",
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

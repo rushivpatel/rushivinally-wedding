@@ -38,7 +38,7 @@ function groupByDay(events: WeddingEvent[]): DayGroup[] {
   const groups: DayGroup[] = [];
 
   for (const event of events) {
-    const dateKey = getEventDateKey(event.dateTime);
+    const dateKey = getEventDateKey(event.dateTime, event.timezone);
     const lastGroup = groups[groups.length - 1];
 
     if (lastGroup && lastGroup.dateKey === dateKey) {
@@ -76,7 +76,7 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
       {dayGroups.map((day) => (
         <div key={day.dateKey} className="flex w-full max-w-xl flex-col items-center gap-10">
           <p className="font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
-            {formatEventDate(day.events[0].dateTime)}
+            {formatEventDate(day.events[0].dateTime, day.events[0].timezone)}
           </p>
 
           {day.events.map((event) => (
@@ -85,7 +85,7 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
               <img
                 src={getSvgIconUrl(event.eventid)}
                 alt=""
-                className="my-2 h-20 w-20 object-contain"
+                className="my-2 h-[100px] w-[100px] object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = getSvgFallbackUrl();
                 }}
@@ -98,13 +98,15 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
               {event.segments.length > 0 ? (
                 <div className="space-y-1">
                   {event.segments.map((segment) => (
-                    <p key={segment.name} className="font-secondary text-lg text-secondary">
-                      {segment.name} · {formatEventTime(segment.dateTime)}
+                    <p key={segment.name} className="font-secondary text-lg text-primary">
+                      {segment.name} · {formatEventTime(segment.dateTime, event.timezone)}
                     </p>
                   ))}
                 </div>
               ) : (
-                <p className="font-secondary text-lg text-secondary">{formatEventTime(event.dateTime)}</p>
+                <p className="font-secondary text-lg text-primary">
+                  {formatEventTime(event.dateTime, event.timezone)}
+                </p>
               )}
 
               <div className="mt-2 space-y-1">
@@ -112,12 +114,16 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                 <p className="font-secondary text-base italic text-primary/70">{event.locationAddress}</p>
               </div>
 
-              {/* Attire hidden until real attire_colors/attire_type values are
-                  set in Supabase — currently placeholder text. Re-add:
-                  <div className="mt-2 space-y-1">
-                    <p className="font-secondary text-base text-primary">Attire | {event.attireColors}</p>
-                    <p className="font-secondary text-base text-primary">{event.attireType}</p>
-                  </div> */}
+              {(event.attireType || event.attireColors) && (
+                <div className="mt-2 space-y-1">
+                  {event.attireType && (
+                    <p className="font-secondary text-base text-primary">Attire | {event.attireType}</p>
+                  )}
+                  {event.attireColors && (
+                    <p className="font-secondary text-base text-primary">{event.attireColors}</p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 flex items-center gap-4">
                 <button

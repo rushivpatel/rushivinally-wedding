@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import type { WeddingEvent } from "@/data/weddingDetails";
 import { formatEventDateTime } from "@/lib/formatDate";
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
@@ -106,8 +107,14 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   return (
     <div className="flex flex-col gap-16">
       {eventGroups.map(({ event, responses }) => (
-        <div key={event.eventid} className="grid grid-cols-1 items-start gap-6 sm:grid-cols-3">
-          <div className="flex items-center gap-3">
+        <div
+          key={event.eventid}
+          className="grid grid-cols-1 items-center gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_auto]"
+        >
+          <div
+            className="flex items-center gap-3 self-start sm:[grid-row:span_var(--rsvp-rows)]"
+            style={{ "--rsvp-rows": responses.length } as CSSProperties}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={getSvgIconUrl(event.eventid)}
@@ -119,32 +126,28 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
             />
             <div>
               <h2 className="font-primary text-xl text-quinary">{event.name}</h2>
-              <p className="font-secondary text-sm text-primary/70">{formatEventDateTime(event.dateTime)}</p>
+              <p className="font-secondary text-sm text-primary/70">
+                {formatEventDateTime(event.dateTime, event.timezone)}
+              </p>
             </div>
           </div>
 
-          <div className="space-y-3 sm:flex sm:flex-col sm:items-center">
-            {responses.map((response) => (
-              <p key={response.guestId} className="flex h-10 items-center font-secondary text-base text-primary">
+          {responses.map((response) => (
+            <Fragment key={response.guestId}>
+              <p className="font-secondary text-base text-primary sm:text-center">
                 {response.fullName}
               </p>
-            ))}
-          </div>
-
-          <div className="space-y-3 sm:flex sm:flex-col sm:items-center">
-            {responses.map((response) => (
               <select
-                key={response.guestId}
                 value={response.attending === true ? "yes" : response.attending === false ? "no" : ""}
                 onChange={(e) => handleAttendingChange(response.guestId, event.eventid, e.target.value)}
-                className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none"
+                className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
               >
                 <option value="">—</option>
                 <option value="yes">Attending</option>
                 <option value="no">Not Attending</option>
               </select>
-            ))}
-          </div>
+            </Fragment>
+          ))}
         </div>
       ))}
 

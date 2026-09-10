@@ -33,6 +33,7 @@ export type WeddingEvent = {
   locationAddress: string;
   coordinates: { lat: number; lng: number };
   dateTime: string;
+  timezone: string;
   attireColors: string;
   attireType: string;
   isPrimaryEvent: boolean;
@@ -47,6 +48,7 @@ type EventRow = {
   location_lat: number;
   location_lng: number;
   event_datetime: string;
+  timezone: string;
   attire_colors: string | null;
   attire_type: string | null;
   is_primary_event: boolean;
@@ -72,6 +74,7 @@ export async function getWeddingEvents(): Promise<WeddingEvent[]> {
     locationAddress: row.location_address,
     coordinates: { lat: row.location_lat, lng: row.location_lng },
     dateTime: row.event_datetime,
+    timezone: row.timezone,
     attireColors: row.attire_colors ?? "",
     attireType: row.attire_type ?? "",
     isPrimaryEvent: row.is_primary_event,
