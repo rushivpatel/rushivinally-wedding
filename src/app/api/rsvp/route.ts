@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   const { data: invites, error: invitesError } = await supabaseServer
     .from("guest_event_invites")
-    .select("guest_id, attending, events(slug)")
+    .select("guest_id, status, events(slug)")
     .in("guest_id", guestIds);
 
   if (invitesError) {
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     invites: (invites ?? []).map((row) => ({
       guestId: row.guest_id,
       eventSlug: (row.events as unknown as { slug: string } | null)?.slug ?? "",
-      attending: row.attending as boolean | null,
+      status: row.status as "attending" | "not_attending" | "undecided" | null,
     })),
   });
 }

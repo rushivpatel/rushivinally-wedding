@@ -7,7 +7,7 @@ import { formatEventDate, formatEventTime, getEventDateKey } from "@/lib/formatD
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
 import { getGuestSession, GUEST_SESSION_EVENT } from "@/lib/guestSession";
 import { generateMapsLink } from "@/lib/generateMapsLink";
-import { downloadIcsFile } from "@/lib/generateCalendarLink";
+import { downloadIcsFileForEvents } from "@/lib/generateCalendarLink";
 
 type ScheduleClientProps = {
   weddingEvents: WeddingEvent[];
@@ -17,6 +17,17 @@ type DayGroup = {
   dateKey: string;
   events: WeddingEvent[];
 };
+
+/** These events aren't individually attributed to Vinally or Rushi in
+ *  their own name, so the calendar entry title gets "Vinally & Rushi's"
+ *  prefixed for clarity — the on-page heading is untouched. */
+const CALENDAR_TITLE_PREFIXED_SLUGS = new Set(["welcome-dinner", "wedding", "reception-garba"]);
+
+function getCalendarTitle(event: WeddingEvent): string {
+  return CALENDAR_TITLE_PREFIXED_SLUGS.has(event.eventid)
+    ? `Vinally & Rushi's ${event.name}`
+    : event.name;
+}
 
 /** For calendar purposes an event should start at its earliest known
  *  time (e.g. Baraat, not the Wedding Ceremony anchor time) and run
@@ -72,90 +83,95 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
   const dayGroups = useMemo(() => groupByDay(visibleEvents), [visibleEvents]);
 
   return (
-    <div className="flex flex-col items-center gap-30">
-      {dayGroups.map((day) => (
-        <div key={day.dateKey} className="flex w-full max-w-xl flex-col items-center gap-10">
-          <p className="font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
-            {formatEventDate(day.events[0].dateTime, day.events[0].timezone)}
-          </p>
+    <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center gap-30">
+        {dayGroups.map((day) => (
+          <div key={day.dateKey} className="flex w-full max-w-xl flex-col items-center gap-10">
+            <p className="font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
+              {formatEventDate(day.events[0].dateTime, day.events[0].timezone)}
+            </p>
 
-          {day.events.map((event) => (
-            <div key={event.eventid} className="flex flex-col items-center gap-3 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={getSvgIconUrl(event.eventid)}
-                alt=""
-                className="my-2 h-[100px] w-[100px] object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = getSvgFallbackUrl();
-                }}
-              />
+            {day.events.map((event) => (
+              <div key={event.eventid} className="flex flex-col items-center gap-3 text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getSvgIconUrl(event.eventid)}
+                  alt=""
+                  className="my-2 h-[100px] w-[100px] object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = getSvgFallbackUrl();
+                  }}
+                />
 
-              <h2 className="font-primary text-2xl uppercase tracking-widest text-quinary">
-                {event.name}
-              </h2>
+                <h2 className="font-primary text-2xl uppercase tracking-widest text-quinary">
+                  {event.name}
+                </h2>
 
-              {event.segments.length > 0 ? (
-                <div className="space-y-1">
-                  {event.segments.map((segment) => (
-                    <p key={segment.name} className="font-secondary text-lg text-primary">
-                      {segment.name} · {formatEventTime(segment.dateTime, event.timezone)}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className="font-secondary text-lg text-primary">
-                  {formatEventTime(event.dateTime, event.timezone)}
-                </p>
-              )}
+                {event.segments.length > 0 ? (
+                  <div className="space-y-1">
+                    {event.segments.map((segment) => (
+                      <p key={segment.name} className="font-secondary text-lg text-primary">
+                        {segment.name} · {formatEventTime(segment.dateTime, event.timezone)}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-secondary text-lg text-primary">
+                    {formatEventTime(event.dateTime, event.timezone)}
+                  </p>
+                )}
 
-              <div className="mt-2 space-y-1">
-                <p className="font-secondary text-lg text-primary">{event.locationName}</p>
-                <p className="font-secondary text-base italic text-primary/70">{event.locationAddress}</p>
-              </div>
-
-              {(event.attireType || event.attireColors) && (
                 <div className="mt-2 space-y-1">
-                  {event.attireType && (
-                    <p className="font-secondary text-base text-primary">Attire | {event.attireType}</p>
-                  )}
-                  {event.attireColors && (
-                    <p className="font-secondary text-base text-primary">{event.attireColors}</p>
-                  )}
+                  <p className="font-secondary text-lg text-primary">{event.locationName}</p>
+                  <p className="font-secondary text-base italic text-primary/70">{event.locationAddress}</p>
                 </div>
-              )}
 
-              <div className="mt-4 flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadIcsFile({
-                      name: event.name,
-                      ...getCalendarWindow(event),
-                      locationName: event.locationName,
-                      locationAddress: event.locationAddress,
-                      attireType: event.attireType,
-                      attireColors: event.attireColors,
-                    })
-                  }
-                  className="rounded-full bg-quinary px-8 py-3 font-secondary text-sm font-bold tracking-wide text-tertiary shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95"
-                >
-                  Add to Calendar
-                </button>
+                {(event.attireType || event.attireColors) && (
+                  <div className="mt-2 space-y-1">
+                    {event.attireType && (
+                      <p className="font-secondary text-base text-primary">Attire | {event.attireType}</p>
+                    )}
+                    {event.attireColors && (
+                      <p className="font-secondary text-base text-primary">{event.attireColors}</p>
+                    )}
+                  </div>
+                )}
+
                 <a
                   href={generateMapsLink(event.locationAddress)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary/70 transition-colors hover:text-primary"
-                  aria-label={`Navigate to ${event.locationName}`}
+                  className="mt-4 flex items-center gap-2 rounded-full bg-quinary px-8 py-3 font-secondary text-sm font-bold tracking-wide text-tertiary shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95"
                 >
-                  <Navigation size={22} />
+                  Navigate
+                  <Navigation size={18} />
                 </a>
               </div>
-            </div>
-          ))}
-        </div>
-      ))}
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {visibleEvents.length > 0 && (
+        <button
+          type="button"
+          onClick={() =>
+            downloadIcsFileForEvents(
+              visibleEvents.map((event) => ({
+                name: getCalendarTitle(event),
+                ...getCalendarWindow(event),
+                locationName: event.locationName,
+                locationAddress: event.locationAddress,
+                attireType: event.attireType,
+                attireColors: event.attireColors,
+              }))
+            )
+          }
+          className="mt-12 rounded-full bg-quinary px-8 py-3 font-secondary text-sm font-bold tracking-wide text-tertiary shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95"
+        >
+          Add All Events to Calendar
+        </button>
+      )}
     </div>
   );
 }

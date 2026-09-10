@@ -7,8 +7,10 @@ import { formatEventDateTime } from "@/lib/formatDate";
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
 import { getGuestSession, GUEST_SESSION_EVENT, type GuestSession } from "@/lib/guestSession";
 
+type InviteStatus = "attending" | "not_attending" | "undecided";
+
 type HouseholdGuest = { guestId: string; fullName: string; message: string | null };
-type Invite = { guestId: string; eventSlug: string; attending: boolean | null };
+type Invite = { guestId: string; eventSlug: string; status: InviteStatus | null };
 
 type RsvpClientProps = {
   weddingEvents: WeddingEvent[];
@@ -56,31 +58,29 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
               (i) => i.guestId === guest.guestId && i.eventSlug === event.eventid
             );
             if (!invite) return null;
-            return { guestId: guest.guestId, fullName: guest.fullName, attending: invite.attending };
+            return { guestId: guest.guestId, fullName: guest.fullName, status: invite.status };
           })
-          .filter((r): r is { guestId: string; fullName: string; attending: boolean | null } => r !== null);
+          .filter((r): r is { guestId: string; fullName: string; status: InviteStatus | null } => r !== null);
 
         return { event, responses };
       })
       .filter((group) => group.responses.length > 0);
   }, [weddingEvents, guests, invites]);
 
-  async function handleAttendingChange(guestId: string, eventSlug: string, value: string) {
-    const attending = value === "yes" ? true : value === "no" ? false : null;
-    if (attending === null) return;
+  async function handleStatusChange(guestId: string, eventSlug: string, value: string) {
+    if (value !== "attending" && value !== "not_attending" && value !== "undecided") return;
+    const status = value;
 
     setInvites((prev) =>
       prev.map((invite) =>
-        invite.guestId === guestId && invite.eventSlug === eventSlug
-          ? { ...invite, attending }
-          : invite
+        invite.guestId === guestId && invite.eventSlug === eventSlug ? { ...invite, status } : invite
       )
     );
 
     await fetch("/api/rsvp/respond", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ guestId, eventSlug, attending }),
+      body: JSON.stringify({ guestId, eventSlug, status }),
     });
   }
 
@@ -138,13 +138,17 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
                 {response.fullName}
               </p>
               <select
-                value={response.attending === true ? "yes" : response.attending === false ? "no" : ""}
-                onChange={(e) => handleAttendingChange(response.guestId, event.eventid, e.target.value)}
+                value={response.status ?? ""}
+                onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
                 className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
               >
-                <option value="">—</option>
-                <option value="yes">Attending</option>
-                <option value="no">Not Attending</option>
+                {/* Once a real choice has been made, "—" is removed for good —
+                    they can only move between Attending / Not Attending /
+                    Undecided from then on, never back to no-response-yet. */}
+                {response.status === null && <option value="">—</option>}
+                <option value="attending">Attending</option>
+                <option value="not_attending">Not Attending</option>
+                {response.status !== null && <option value="undecided">Undecided</option>}
               </select>
             </Fragment>
           ))}
