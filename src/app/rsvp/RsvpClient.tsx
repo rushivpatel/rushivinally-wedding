@@ -114,7 +114,11 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       <div className="grid grid-cols-1 items-center gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_auto]">
         {eventGroups.map(({ event, responses }, groupIndex) => (
           <Fragment key={event.eventid}>
-            {groupIndex > 0 && <div className="col-span-1 h-6 sm:col-span-3" />}
+            {groupIndex > 0 && (
+              <div className="col-span-1 py-4 sm:col-span-3">
+                <div className="h-[1.5px] w-full bg-primary/10" />
+              </div>
+            )}
 
             <div
               className="flex items-center gap-3 self-start sm:[grid-row:span_var(--rsvp-rows)]"

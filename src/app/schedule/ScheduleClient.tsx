@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Navigation } from "lucide-react";
 import type { WeddingEvent } from "@/data/weddingDetails";
 import { formatEventDate, formatEventTime, getEventDateKey } from "@/lib/formatDate";
@@ -85,14 +85,19 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
   return (
     <div className="flex flex-col items-center">
       <div className="flex flex-col items-center gap-30">
-        {dayGroups.map((day) => (
-          <div key={day.dateKey} className="flex w-full max-w-xl flex-col items-center gap-10">
-            <p className="font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
+        {dayGroups.map((day, dayIndex) => (
+          <Fragment key={day.dateKey}>
+            {dayIndex > 0 && <div className="-my-[96px] h-[1.5px] w-full max-w-xl bg-primary/10" />}
+            <div className="flex w-full max-w-xl flex-col items-center">
+            <p className="mb-4 font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
               {formatEventDate(day.events[0].dateTime, day.events[0].timezone)}
             </p>
 
-            {day.events.map((event) => (
-              <div key={event.eventid} className="flex flex-col items-center gap-3 text-center">
+            {day.events.map((event, eventIndex) => (
+              <div
+                key={event.eventid}
+                className={`flex w-full flex-col items-center gap-3 text-center ${eventIndex > 0 ? "mt-10" : ""}`}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getSvgIconUrl(event.eventid)}
@@ -148,7 +153,8 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                 </a>
               </div>
             ))}
-          </div>
+            </div>
+          </Fragment>
         ))}
       </div>
 
