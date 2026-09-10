@@ -89,7 +89,7 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
           <Fragment key={day.dateKey}>
             {dayIndex > 0 && <div className="-my-[96px] h-[1.5px] w-full max-w-xl bg-primary/10" />}
             <div className="flex w-full max-w-xl flex-col items-center">
-            <p className="mb-4 font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
+            <p className="mb-4 text-center font-primary text-3xl uppercase tracking-widest text-primary sm:whitespace-nowrap">
               {formatEventDate(day.events[0].dateTime, day.events[0].timezone)}
             </p>
 
