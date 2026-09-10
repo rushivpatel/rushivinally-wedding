@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import type { WeddingEvent } from "@/data/weddingDetails";
-import { formatEventDateTime } from "@/lib/formatDate";
+import { formatEventDate } from "@/lib/formatDate";
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
 import { getGuestSession, GUEST_SESSION_EVENT, type GuestSession } from "@/lib/guestSession";
 
@@ -106,54 +106,60 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
 
   return (
     <div className="flex flex-col gap-16">
-      {eventGroups.map(({ event, responses }) => (
-        <div
-          key={event.eventid}
-          className="grid grid-cols-1 items-center gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_auto]"
-        >
-          <div
-            className="flex items-center gap-3 self-start sm:[grid-row:span_var(--rsvp-rows)]"
-            style={{ "--rsvp-rows": responses.length } as CSSProperties}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getSvgIconUrl(event.eventid)}
-              alt=""
-              className="h-14 w-14 object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = getSvgFallbackUrl();
-              }}
-            />
-            <div>
-              <h2 className="font-primary text-xl text-quinary">{event.name}</h2>
-              <p className="font-secondary text-sm text-primary/70">
-                {formatEventDateTime(event.dateTime, event.timezone)}
-              </p>
-            </div>
-          </div>
+      {/* One shared grid for every event so column widths (especially the
+          event-block column, which is "auto" width) are computed once
+          across all content — splitting this into a separate grid per
+          event let each one size its own columns independently, so the
+          name/picklist columns didn't line up between different events. */}
+      <div className="grid grid-cols-1 items-center gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_auto]">
+        {eventGroups.map(({ event, responses }, groupIndex) => (
+          <Fragment key={event.eventid}>
+            {groupIndex > 0 && <div className="col-span-1 h-6 sm:col-span-3" />}
 
-          {responses.map((response) => (
-            <Fragment key={response.guestId}>
-              <p className="font-secondary text-base text-primary sm:text-center">
-                {response.fullName}
-              </p>
-              <select
-                value={response.status ?? ""}
-                onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
-                className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
-              >
-                {/* Once a real choice has been made, "—" is removed for good —
-                    they can only move between Attending / Not Attending /
-                    Undecided from then on, never back to no-response-yet. */}
-                {response.status === null && <option value="">—</option>}
-                <option value="attending">Attending</option>
-                <option value="not_attending">Not Attending</option>
-                {response.status !== null && <option value="undecided">Undecided</option>}
-              </select>
-            </Fragment>
-          ))}
-        </div>
-      ))}
+            <div
+              className="flex items-center gap-3 self-start sm:[grid-row:span_var(--rsvp-rows)]"
+              style={{ "--rsvp-rows": responses.length } as CSSProperties}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getSvgIconUrl(event.eventid)}
+                alt=""
+                className="h-14 w-14 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = getSvgFallbackUrl();
+                }}
+              />
+              <div>
+                <h2 className="font-primary text-xl text-quinary">{event.name}</h2>
+                <p className="font-secondary text-sm text-primary/70">
+                  {formatEventDate(event.dateTime, event.timezone)}
+                </p>
+              </div>
+            </div>
+
+            {responses.map((response) => (
+              <Fragment key={response.guestId}>
+                <p className="font-secondary text-base text-primary sm:text-center">
+                  {response.fullName}
+                </p>
+                <select
+                  value={response.status ?? ""}
+                  onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
+                  className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
+                >
+                  {/* Once a real choice has been made, "—" is removed for good —
+                      they can only move between Attending / Not Attending /
+                      Undecided from then on, never back to no-response-yet. */}
+                  {response.status === null && <option value="">—</option>}
+                  <option value="attending">Attending</option>
+                  <option value="not_attending">Not Attending</option>
+                  {response.status !== null && <option value="undecided">Undecided</option>}
+                </select>
+              </Fragment>
+            ))}
+          </Fragment>
+        ))}
+      </div>
 
       <div className="mt-8">
         <p className="mb-2 font-secondary text-sm uppercase tracking-wide text-primary/70">

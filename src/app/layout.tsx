@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rushi & Vinally's Wedding",
+  title: "Vinally & Rushi's Wedding",
   description: "Join us as we celebrate our wedding.",
 };
 
