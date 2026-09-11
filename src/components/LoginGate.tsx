@@ -33,6 +33,23 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
     inputRef.current?.focus();
   }, []);
 
+  // iOS Safari detects this field as a contact field and force-zooms to make
+  // room for its own "AutoFill Contact" suggestion bar above the keyboard —
+  // that happens regardless of font-size and ignores autoComplete="off".
+  // Locking the viewport scale while this gate is mounted blocks that,
+  // without taking pinch-zoom away from the rest of the site.
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="viewport"]');
+    const original = meta?.getAttribute("content") ?? null;
+    meta?.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+    );
+    return () => {
+      if (original !== null) meta?.setAttribute("content", original);
+    };
+  }, []);
+
   function beginUnlockSequence() {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
