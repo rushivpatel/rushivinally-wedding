@@ -35,9 +35,14 @@ export default function Navbar() {
   useEffect(() => {
     function applySession() {
       const session = getGuestSession();
-      if (!session?.isSimpleInvite) return;
+      if (!session) return;
 
-      setNavLinks(NAV_LINKS.filter((link) => !SIMPLE_INVITE_HIDDEN_HREFS.includes(link.href)));
+      const hiddenHrefs = [
+        ...(session.isSimpleInvite ? SIMPLE_INVITE_HIDDEN_HREFS : []),
+        ...(session.hideRsvp ? ["/rsvp"] : []),
+      ];
+
+      setNavLinks(NAV_LINKS.filter((link) => !hiddenHrefs.includes(link.href)));
     }
 
     applySession();

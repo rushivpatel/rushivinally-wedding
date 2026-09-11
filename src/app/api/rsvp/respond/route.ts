@@ -13,6 +13,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 });
   }
 
+  const { data: guestRow, error: guestError } = await supabaseServer
+    .from("guests")
+    .select("lock_rsvp")
+    .eq("id", guestId)
+    .maybeSingle();
+
+  if (guestError || !guestRow) {
+    return NextResponse.json({ error: "Guest not found" }, { status: 404 });
+  }
+
+  if (guestRow.lock_rsvp) {
+    return NextResponse.json({ error: "RSVPs are locked" }, { status: 403 });
+  }
+
   const { data: event, error: eventError } = await supabaseServer
     .from("events")
     .select("id")

@@ -28,7 +28,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
     async function loadForSession() {
       const current = getGuestSession();
       setSession(current);
-      if (!current) {
+      if (!current || current.hideRsvp) {
         setLoading(false);
         return;
       }
@@ -68,6 +68,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   }, [weddingEvents, guests, invites]);
 
   async function handleStatusChange(guestId: string, eventSlug: string, value: string) {
+    if (session?.lockRsvp) return;
     if (value !== "attending" && value !== "not_attending" && value !== "undecided") return;
     const status = value;
 
@@ -104,8 +105,19 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
     return <p className="font-secondary text-primary/60">Please log in to view your RSVP.</p>;
   }
 
+  if (session.hideRsvp) {
+    return <p className="font-secondary text-primary/60">This page isn&apos;t available for your invitation.</p>;
+  }
+
   return (
     <div className="flex flex-col gap-16">
+      {session.lockRsvp && (
+        <p className="font-secondary text-sm text-primary/70">
+          RSVP&apos;s are now locked. If you are unable to attend an event, please
+          contact Vinally or Rushi directly.
+        </p>
+      )}
+
       {/* One shared grid for every event so column widths (especially the
           event-block column, which is "auto" width) are computed once
           across all content — splitting this into a separate grid per
@@ -149,7 +161,8 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
                 <select
                   value={response.status ?? ""}
                   onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
-                  className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
+                  disabled={session.lockRsvp}
+                  className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:justify-self-center"
                 >
                   {/* Once a real choice has been made, "—" is removed for good —
                       they can only move between Attending / Not Attending /

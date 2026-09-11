@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { buildSessionPayload } from "@/lib/guestSessionServer";
 
 type GuestRow = {
   id: string;
@@ -7,6 +8,8 @@ type GuestRow = {
   email: string | null;
   household_id: string | null;
   simple_invite: boolean;
+  hide_rsvp: boolean;
+  lock_rsvp: boolean;
 };
 
 export async function POST(request: Request) {
@@ -21,7 +24,7 @@ export async function POST(request: Request) {
 
   const { data: guests, error } = await supabaseServer
     .from("guests")
-    .select("id, full_name, email, household_id, simple_invite");
+    .select("id, full_name, email, household_id, simple_invite, hide_rsvp, lock_rsvp");
 
   if (error) {
     return NextResponse.json({ match: null }, { status: 500 });
@@ -43,22 +46,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ match: null });
   }
 
-  const { data: invites } = await supabaseServer
-    .from("guest_event_invites")
-    .select("events(slug)")
-    .eq("guest_id", guest.id);
-
-  const invitedEventSlugs = (invites ?? [])
-    .map((row) => (row.events as unknown as { slug: string } | null)?.slug)
-    .filter((slug): slug is string => Boolean(slug));
-
-  return NextResponse.json({
-    match: {
-      guestId: guest.id,
-      householdId: guest.household_id,
-      guestName: guest.full_name,
-      invitedEventSlugs,
-      isSimpleInvite: guest.simple_invite,
-    },
-  });
+  return NextResponse.json({ match: await buildSessionPayload(guest) });
 }
