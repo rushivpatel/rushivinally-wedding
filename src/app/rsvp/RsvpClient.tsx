@@ -9,6 +9,12 @@ import { getGuestSession, GUEST_SESSION_EVENT, type GuestSession } from "@/lib/g
 
 type InviteStatus = "attending" | "not_attending" | "undecided";
 
+const STATUS_LABELS: Record<InviteStatus, string> = {
+  attending: "Attending",
+  not_attending: "Not Attending",
+  undecided: "Undecided",
+};
+
 type HouseholdGuest = { guestId: string; fullName: string; message: string | null };
 type Invite = { guestId: string; eventSlug: string; status: InviteStatus | null };
 
@@ -112,7 +118,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   return (
     <div className="flex flex-col gap-16">
       {session.lockRsvp && (
-        <p className="font-secondary text-sm text-primary/70">
+        <p className="font-secondary text-2xl text-primary">
           RSVP&apos;s are now locked. If you are unable to attend an event, please
           contact Vinally or Rushi directly.
         </p>
@@ -158,20 +164,25 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
                 <p className="font-secondary text-base text-primary sm:text-center">
                   {response.fullName}
                 </p>
-                <select
-                  value={response.status ?? ""}
-                  onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
-                  disabled={session.lockRsvp}
-                  className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:justify-self-center"
-                >
-                  {/* Once a real choice has been made, "—" is removed for good —
-                      they can only move between Attending / Not Attending /
-                      Undecided from then on, never back to no-response-yet. */}
-                  {response.status === null && <option value="">—</option>}
-                  <option value="attending">Attending</option>
-                  <option value="not_attending">Not Attending</option>
-                  {response.status !== null && <option value="undecided">Undecided</option>}
-                </select>
+                {session.lockRsvp ? (
+                  <p className="font-secondary text-sm text-primary/50 sm:justify-self-center">
+                    {response.status ? STATUS_LABELS[response.status] : "—"}
+                  </p>
+                ) : (
+                  <select
+                    value={response.status ?? ""}
+                    onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
+                    className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
+                  >
+                    {/* Once a real choice has been made, "—" is removed for good —
+                        they can only move between Attending / Not Attending /
+                        Undecided from then on, never back to no-response-yet. */}
+                    {response.status === null && <option value="">—</option>}
+                    <option value="attending">Attending</option>
+                    <option value="not_attending">Not Attending</option>
+                    {response.status !== null && <option value="undecided">Undecided</option>}
+                  </select>
+                )}
               </Fragment>
             ))}
           </Fragment>
