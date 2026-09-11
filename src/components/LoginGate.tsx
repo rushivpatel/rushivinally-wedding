@@ -214,7 +214,7 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
                 spellCheck={false}
                 data-lpignore="true"
                 data-1p-ignore="true"
-                className="w-[180px] border-0 border-b border-primary bg-transparent py-1 text-center font-secondary text-base tracking-wide text-quinary caret-quinary placeholder:text-primary/40 focus:border-quinary focus:outline-none sm:text-xs"
+                className="w-[180px] border-0 border-b border-primary bg-transparent py-1 text-center font-secondary text-base tracking-wide text-primary caret-quinary placeholder:text-primary/40 focus:border-quinary focus:outline-none sm:text-xs"
               />
 
               <button
