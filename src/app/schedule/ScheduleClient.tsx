@@ -173,7 +173,7 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
               }))
             )
           }
-          className="mt-12 rounded-full bg-quinary px-8 py-3 font-secondary text-sm font-bold tracking-wide text-tertiary shadow-[0_4px_12px_rgba(184,150,90,0.35)] transition-all duration-300 ease-out hover:shadow-[0_6px_16px_rgba(184,150,90,0.45)] active:scale-95"
+          className="liquid-glass-lite mt-12 rounded-full px-8 py-3 font-secondary text-sm font-bold tracking-wide text-primary transition-shadow duration-300 ease-out active:scale-95"
         >
           Add All Events to Calendar
         </button>
