@@ -6,7 +6,6 @@ const UNITS = [
   { label: "Days", key: "days" as const },
   { label: "Hours", key: "hours" as const },
   { label: "Minutes", key: "minutes" as const },
-  { label: "Seconds", key: "seconds" as const },
 ];
 
 export default function Countdown({ targetDate }: { targetDate: string }) {
