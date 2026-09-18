@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Faculty_Glyphic } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AudioPlayer from "@/components/AudioPlayer";
@@ -11,8 +11,9 @@ const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
 });
 
-const inter = Inter({
+const facultyGlyphic = Faculty_Glyphic({
   variable: "--font-secondary",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${playfairDisplay.variable} ${inter.variable} h-full antialiased`}
+      className={`${playfairDisplay.variable} ${facultyGlyphic.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-secondary">
         <SiteGate>
