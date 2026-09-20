@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# real guest list — contains personal data, never commit
+# (scripts/guests.template.csv is the fillable example and stays tracked)
+/scripts/guests.csv
+/scripts/guests-*.csv
