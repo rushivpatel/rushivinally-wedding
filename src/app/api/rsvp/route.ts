@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const { data: self, error: selfError } = await supabaseServer
     .from("guests")
-    .select("id, household_id")
+    .select("id, household_id, open_slots")
     .eq("id", guestId)
     .maybeSingle();
 
@@ -40,7 +40,51 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to load invites" }, { status: 500 });
   }
 
+  // Open-invite guests (open_slots set) also get their named slots and each
+  // slot's per-event answers.
+  const openSlots: number | null = self.open_slots ?? null;
+  let slots: { slotId: string; slotNumber: number; fullName: string }[] = [];
+  let slotInvites: { slotId: string; eventSlug: string; status: string }[] = [];
+
+  if (openSlots) {
+    const { data: slotRows, error: slotsError } = await supabaseServer
+      .from("guest_slots")
+      .select("id, slot_number, full_name")
+      .eq("guest_id", guestId)
+      .order("slot_number");
+
+    if (slotsError) {
+      return NextResponse.json({ error: "Failed to load slots" }, { status: 500 });
+    }
+
+    slots = (slotRows ?? []).map((row) => ({
+      slotId: row.id,
+      slotNumber: row.slot_number,
+      fullName: row.full_name,
+    }));
+
+    if (slots.length > 0) {
+      const { data: slotInviteRows, error: slotInvitesError } = await supabaseServer
+        .from("guest_slot_invites")
+        .select("slot_id, status, events(slug)")
+        .in("slot_id", slots.map((s) => s.slotId));
+
+      if (slotInvitesError) {
+        return NextResponse.json({ error: "Failed to load slot responses" }, { status: 500 });
+      }
+
+      slotInvites = (slotInviteRows ?? []).map((row) => ({
+        slotId: row.slot_id,
+        eventSlug: (row.events as unknown as { slug: string } | null)?.slug ?? "",
+        status: row.status,
+      }));
+    }
+  }
+
   return NextResponse.json({
+    openSlots,
+    slots,
+    slotInvites,
     guests: householdGuests.map((g) => ({
       guestId: g.id,
       fullName: g.full_name,

@@ -17,6 +17,16 @@ const STATUS_LABELS: Record<InviteStatus, string> = {
 
 type HouseholdGuest = { guestId: string; fullName: string; message: string | null };
 type Invite = { guestId: string; eventSlug: string; status: InviteStatus | null };
+type Slot = { slotId: string; slotNumber: number; fullName: string };
+type SlotInvite = { slotId: string; eventSlug: string; status: InviteStatus };
+
+/** One RSVP line — either a household member or a named open-invite slot. */
+type ResponseRow = {
+  key: string;
+  fullName: string;
+  status: InviteStatus | null;
+  save: (eventSlug: string, value: InviteStatus) => void | Promise<void>;
+};
 
 type RsvpClientProps = {
   weddingEvents: WeddingEvent[];
@@ -26,6 +36,10 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   const [session, setSession] = useState<GuestSession | null>(null);
   const [guests, setGuests] = useState<HouseholdGuest[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [openSlots, setOpenSlots] = useState<number | null>(null);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotInvites, setSlotInvites] = useState<SlotInvite[]>([]);
+  const [slotNames, setSlotNames] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [messageStatus, setMessageStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [loading, setLoading] = useState(true);
@@ -45,6 +59,15 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       const loadedGuests: HouseholdGuest[] = data.guests ?? [];
       setGuests(loadedGuests);
       setInvites(data.invites ?? []);
+      const loadedSlots: Slot[] = data.slots ?? [];
+      setOpenSlots(data.openSlots ?? null);
+      setSlots(loadedSlots);
+      setSlotInvites(data.slotInvites ?? []);
+      setSlotNames(
+        Array.from({ length: data.openSlots ?? 0 }, (_, i) =>
+          loadedSlots.find((slot) => slot.slotNumber === i + 1)?.fullName ?? ""
+        )
+      );
       const self = loadedGuests.find((g) => g.guestId === current.guestId);
       setMessage(self?.message ?? "");
       setLoading(false);
@@ -56,22 +79,50 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   }, []);
 
   const eventGroups = useMemo(() => {
+    // Slots answer for the events their login guest is invited to.
+    const ownEventSlugs = new Set(
+      invites.filter((i) => i.guestId === session?.guestId).map((i) => i.eventSlug)
+    );
+
     return weddingEvents
       .map((event) => {
-        const responses = guests
-          .map((guest) => {
-            const invite = invites.find(
-              (i) => i.guestId === guest.guestId && i.eventSlug === event.eventid
-            );
-            if (!invite) return null;
-            return { guestId: guest.guestId, fullName: guest.fullName, status: invite.status };
-          })
-          .filter((r): r is { guestId: string; fullName: string; status: InviteStatus | null } => r !== null);
+        // An open-invite guest is only a login, not an invitee — their own
+        // row is hidden and only their named slots respond.
+        const guestRows: ResponseRow[] = openSlots
+          ? []
+          : guests
+              .map((guest): ResponseRow | null => {
+                const invite = invites.find(
+                  (i) => i.guestId === guest.guestId && i.eventSlug === event.eventid
+                );
+                if (!invite) return null;
+                return {
+                  key: guest.guestId,
+                  fullName: guest.fullName,
+                  status: invite.status,
+                  save: (eventSlug: string, value: InviteStatus) =>
+                    handleStatusChange(guest.guestId, eventSlug, value),
+                };
+              })
+              .filter((r): r is ResponseRow => r !== null);
 
-        return { event, responses };
+        const slotRows: ResponseRow[] = ownEventSlugs.has(event.eventid)
+          ? slots.map((slot) => ({
+              key: `slot-${slot.slotId}`,
+              fullName: slot.fullName,
+              status:
+                slotInvites.find((i) => i.slotId === slot.slotId && i.eventSlug === event.eventid)
+                  ?.status ?? null,
+              save: (eventSlug: string, value: InviteStatus) =>
+                handleSlotStatusChange(slot.slotId, eventSlug, value),
+            }))
+          : [];
+
+        return { event, responses: [...guestRows, ...slotRows] };
       })
       .filter((group) => group.responses.length > 0);
-  }, [weddingEvents, guests, invites]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weddingEvents, guests, invites, openSlots, slots, slotInvites, session]);
 
   async function handleStatusChange(guestId: string, eventSlug: string, value: string) {
     if (session?.lockRsvp) return;
@@ -89,6 +140,45 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ guestId, eventSlug, status }),
     });
+  }
+
+  async function handleSlotStatusChange(slotId: string, eventSlug: string, status: InviteStatus) {
+    if (session?.lockRsvp) return;
+
+    setSlotInvites((prev) => [
+      ...prev.filter((i) => !(i.slotId === slotId && i.eventSlug === eventSlug)),
+      { slotId, eventSlug, status },
+    ]);
+
+    await fetch("/api/rsvp/slots/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: session?.guestId, slotId, eventSlug, status }),
+    });
+  }
+
+  async function handleSlotNameBlur(slotNumber: number) {
+    if (!session || session.lockRsvp) return;
+    const typed = (slotNames[slotNumber - 1] ?? "").trim();
+    const existing = slots.find((slot) => slot.slotNumber === slotNumber);
+    if (typed === (existing?.fullName ?? "")) return;
+
+    const response = await fetch("/api/rsvp/slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: session.guestId, slotNumber, fullName: typed }),
+    });
+    if (!response.ok) return;
+
+    const { slot } = (await response.json()) as { slot: Slot | null };
+    setSlots((prev) => {
+      const without = prev.filter((s) => s.slotNumber !== slotNumber);
+      return slot ? [...without, slot].sort((a, b) => a.slotNumber - b.slotNumber) : without;
+    });
+    if (!slot && existing) {
+      // Clearing a name also drops that slot's answers on the server.
+      setSlotInvites((prev) => prev.filter((i) => i.slotId !== existing.slotId));
+    }
   }
 
   async function handleSendMessage() {
@@ -123,6 +213,41 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
           contact Vinally or Rushi directly.
         </p>
       )}
+
+      {openSlots ? (
+        <div>
+          <h2 className="font-primary text-xl text-quinary">Who&apos;s attending from your party?</h2>
+          <p className="mt-1 mb-4 font-secondary text-sm text-primary/70">
+            {session.lockRsvp
+              ? "Your guest names are locked."
+              : `Enter the name of each guest attending (up to ${openSlots}), then RSVP for them below.`}
+          </p>
+          <div className="flex flex-col gap-3 sm:max-w-sm">
+            {slotNames.map((name, i) =>
+              session.lockRsvp ? (
+                <p key={i} className="font-secondary text-base text-primary">
+                  <span className="text-primary/50">Guest {i + 1}: </span>
+                  {name || "—"}
+                </p>
+              ) : (
+                <input
+                  key={i}
+                  type="text"
+                  value={name}
+                  maxLength={100}
+                  placeholder={`Guest ${i + 1}`}
+                  autoComplete="off"
+                  onChange={(e) =>
+                    setSlotNames((prev) => prev.map((n, idx) => (idx === i ? e.target.value : n)))
+                  }
+                  onBlur={() => handleSlotNameBlur(i + 1)}
+                  className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-base text-primary placeholder:text-primary/40 focus:border-quinary focus:outline-none"
+                />
+              )
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {/* One shared grid for every event so column widths (especially the
           event-block column, which is "auto" width) are computed once
@@ -160,7 +285,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
             </div>
 
             {responses.map((response) => (
-              <Fragment key={response.guestId}>
+              <Fragment key={response.key}>
                 <p className="font-secondary text-base text-primary sm:text-center">
                   {response.fullName}
                 </p>
@@ -171,7 +296,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
                 ) : (
                   <select
                     value={response.status ?? ""}
-                    onChange={(e) => handleStatusChange(response.guestId, event.eventid, e.target.value)}
+                    onChange={(e) => response.save(event.eventid, e.target.value as InviteStatus)}
                     className="h-10 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-sm text-primary focus:border-quinary focus:outline-none sm:justify-self-center"
                   >
                     {/* Once a real choice has been made, "—" is removed for good —

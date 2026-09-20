@@ -136,6 +136,19 @@ async function main() {
       invite_sent: toBool(get("invite_sent")),
     };
 
+    // Only touched when the CSV actually has the column, so an older CSV
+    // without it can't wipe a slot count set directly in Supabase.
+    if (col["open_slots"] !== undefined) {
+      const raw = get("open_slots");
+      if (raw === "") {
+        guestPayload.open_slots = null;
+      } else if (/^[1-9]\d*$/.test(raw)) {
+        guestPayload.open_slots = Number(raw);
+      } else {
+        throw new Error(`Invalid open_slots "${raw}" for ${fullName} (use a whole number, or leave blank)`);
+      }
+    }
+
     const { data: existing, error: lookupError } = await supabase
       .from("guests")
       .select("id")

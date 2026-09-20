@@ -1,6 +1,7 @@
-household,full_name,email,phone,address,side,relation_label,is_child,dietary_restrictions,simple_invite,hide_rsvp,lock_rsvp,digital_save_the_date_sent,physical_save_the_date_sent,invite_sent,vinally-grah-shanti,welcome-dinner,rushi-grah-shanti,haldi-pithi,wedding,reception-garba
-Smith Family,Jane Smith,jane.smith@example.com,555-123-4567,"123 Main St, Springfield, IL 62701",bride,College Friend,no,Vegetarian,no,yes,no,yes,no,no,,x,,,x,x
-Smith Family,John Smith,john.smith@example.com,555-123-4568,"123 Main St, Springfield, IL 62701",bride,College Friend,no,,no,yes,no,yes,no,no,,x,,,x,x
-Kapoor Family,Priya Kapoor,priya.kapoor@example.com,555-234-5678,"456 Oak Ave, Austin, TX 78701",groom,Cousin,no,Nut allergy,no,yes,no,no,yes,no,x,x,x,x,x,x
-Kapoor Family,Little Kapoor,,,,groom,Cousin,yes,,no,yes,no,no,yes,no,x,x,x,x,x,x
-Diaz Household,Maria Diaz,maria.diaz@example.com,555-345-6789,"789 Pine Rd, Denver, CO 80202",bride,Coworker,no,,yes,yes,no,yes,no,no,,,,,x,x
+household,full_name,email,phone,address,side,relation_label,is_child,dietary_restrictions,simple_invite,hide_rsvp,lock_rsvp,open_slots,digital_save_the_date_sent,physical_save_the_date_sent,invite_sent,vinally-grah-shanti,welcome-dinner,rushi-grah-shanti,haldi-pithi,wedding,reception-garba
+Smith Family,Jane Smith,jane.smith@example.com,555-123-4567,"123 Main St, Springfield, IL 62701",bride,College Friend,no,Vegetarian,no,yes,no,,yes,no,no,,x,,,x,x
+Smith Family,John Smith,john.smith@example.com,555-123-4568,"123 Main St, Springfield, IL 62701",bride,College Friend,no,,no,yes,no,,yes,no,no,,x,,,x,x
+Kapoor Family,Priya Kapoor,priya.kapoor@example.com,555-234-5678,"456 Oak Ave, Austin, TX 78701",groom,Cousin,no,Nut allergy,no,yes,no,,no,yes,no,x,x,x,x,x,x
+Kapoor Family,Little Kapoor,,,,groom,Cousin,yes,,no,yes,no,,no,yes,no,x,x,x,x,x,x
+Diaz Household,Maria Diaz,maria.diaz@example.com,555-345-6789,"789 Pine Rd, Denver, CO 80202",bride,Coworker,no,,yes,yes,no,,yes,no,no,,,,,x,x
+Lee Household,Sam Lee,sam.lee@example.com,555-456-7890,"321 Elm St, Portland, OR 97201",groom,Family Friend,no,,no,no,no,3,no,no,no,,x,,,x,x
