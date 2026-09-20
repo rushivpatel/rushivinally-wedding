@@ -18,8 +18,23 @@ const facultyGlyphic = Faculty_Glyphic({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vinallyrushi.com"),
   title: "Vinally & Rushi's Wedding",
   description: "Join us as we celebrate our wedding.",
+  openGraph: {
+    title: "Vinally & Rushi's Wedding",
+    description: "Join us as we celebrate our wedding.",
+    url: "/",
+    siteName: "Vinally & Rushi's Wedding",
+    type: "website",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vinally & Rushi's Wedding",
+    description: "Join us as we celebrate our wedding.",
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
