@@ -6,6 +6,10 @@ import type { WeddingEvent } from "@/data/weddingDetails";
 import { formatEventDate } from "@/lib/formatDate";
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
 import { getGuestSession, GUEST_SESSION_EVENT, type GuestSession } from "@/lib/guestSession";
+import MasterSummary from "./MasterSummary";
+
+/** The household that gets the all-guests summary instead of a personal RSVP. */
+const MASTER_HOUSEHOLD = "master";
 
 type InviteStatus = "attending" | "not_attending" | "undecided";
 
@@ -15,7 +19,12 @@ const STATUS_LABELS: Record<InviteStatus, string> = {
   undecided: "Undecided",
 };
 
-type HouseholdGuest = { guestId: string; fullName: string; message: string | null };
+type HouseholdGuest = {
+  guestId: string;
+  fullName: string;
+  message: string | null;
+  dietary: string | null;
+};
 type Invite = { guestId: string; eventSlug: string; status: InviteStatus | null };
 type Slot = { slotId: string; slotNumber: number; fullName: string };
 type SlotInvite = { slotId: string; eventSlug: string; status: InviteStatus };
@@ -42,13 +51,15 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   const [slotNames, setSlotNames] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [messageStatus, setMessageStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [dietary, setDietary] = useState("");
+  const [dietaryStatus, setDietaryStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadForSession() {
       const current = getGuestSession();
       setSession(current);
-      if (!current || current.hideRsvp) {
+      if (!current || current.hideRsvp || current.householdId === MASTER_HOUSEHOLD) {
         setLoading(false);
         return;
       }
@@ -70,6 +81,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       );
       const self = loadedGuests.find((g) => g.guestId === current.guestId);
       setMessage(self?.message ?? "");
+      setDietary(self?.dietary ?? "");
       setLoading(false);
     }
 
@@ -181,6 +193,18 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
     }
   }
 
+  async function handleSaveDietary() {
+    if (!session) return;
+    setDietaryStatus("saving");
+    await fetch("/api/rsvp/dietary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: session.guestId, dietary }),
+    });
+    setDietaryStatus("saved");
+    window.setTimeout(() => setDietaryStatus("idle"), 2000);
+  }
+
   async function handleSendMessage() {
     if (!session) return;
     setMessageStatus("saving");
@@ -199,6 +223,10 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
 
   if (!session) {
     return <p className="font-secondary text-primary/60">Please log in to view your RSVP.</p>;
+  }
+
+  if (session.householdId === MASTER_HOUSEHOLD) {
+    return <MasterSummary guestId={session.guestId} weddingEvents={weddingEvents} />;
   }
 
   if (session.hideRsvp) {
@@ -315,6 +343,29 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       </div>
 
       <div className="mt-8">
+        <p className="mb-2 font-secondary text-sm uppercase tracking-wide text-primary/70">
+          Dietary restrictions
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={dietary}
+            onChange={(e) => setDietary(e.target.value)}
+            maxLength={300}
+            autoComplete="off"
+            className="h-10 flex-1 rounded-full border border-primary/30 bg-transparent px-4 font-secondary text-base text-primary focus:border-quinary focus:outline-none sm:text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleSaveDietary}
+            className="rounded-full bg-quinary px-6 py-2.5 font-secondary text-sm font-bold text-tertiary transition-all duration-300 ease-out hover:shadow-md active:scale-95"
+          >
+            {dietaryStatus === "saving" ? "..." : dietaryStatus === "saved" ? "Saved" : "Save"}
+          </button>
+        </div>
+      </div>
+
+      <div className="-mt-8">
         <p className="mb-2 font-secondary text-sm uppercase tracking-wide text-primary/70">
           Notes / Send a message to Vinally &amp; Rushi
         </p>

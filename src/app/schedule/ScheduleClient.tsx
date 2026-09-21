@@ -5,7 +5,7 @@ import { Navigation } from "lucide-react";
 import type { WeddingEvent } from "@/data/weddingDetails";
 import { formatEventDate, formatEventTime, getEventDateKey } from "@/lib/formatDate";
 import { getSvgIconUrl, getSvgFallbackUrl } from "@/lib/loadSvgIcon";
-import { getGuestSession, GUEST_SESSION_EVENT } from "@/lib/guestSession";
+import { getGuestSession, GUEST_SESSION_EVENT, isMasterSession } from "@/lib/guestSession";
 import { generateMapsLink } from "@/lib/generateMapsLink";
 import { downloadIcsFileForEvents } from "@/lib/generateCalendarLink";
 
@@ -69,6 +69,11 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
     function applySession() {
       const session = getGuestSession();
       if (!session) return;
+
+      if (isMasterSession(session)) {
+        setVisibleEvents(weddingEvents);
+        return;
+      }
 
       setVisibleEvents(
         weddingEvents.filter((event) => session.invitedEventSlugs.includes(event.eventid))

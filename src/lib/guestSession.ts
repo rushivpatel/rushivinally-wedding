@@ -5,6 +5,13 @@ const STORAGE_KEY = "vr-wedding-guest";
  *  login happens) can react without needing a page reload. */
 export const GUEST_SESSION_EVENT = "vr-guest-session-updated";
 
+/** The couple's own login: sees every page and event, no per-guest gating. */
+export const MASTER_HOUSEHOLD_ID = "master";
+
+export function isMasterSession(session: GuestSession | null): boolean {
+  return session?.householdId === MASTER_HOUSEHOLD_ID;
+}
+
 export type GuestSession = {
   guestId: string;
   householdId: string;

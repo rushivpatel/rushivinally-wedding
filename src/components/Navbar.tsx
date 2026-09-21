@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Monogram from "@/components/Monogram";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { getGuestSession, GUEST_SESSION_EVENT } from "@/lib/guestSession";
+import { getGuestSession, GUEST_SESSION_EVENT, isMasterSession } from "@/lib/guestSession";
 
 const NAV_LINKS = [
   { href: "/", label: "Welcome" },
@@ -36,6 +36,11 @@ export default function Navbar() {
     function applySession() {
       const session = getGuestSession();
       if (!session) return;
+
+      if (isMasterSession(session)) {
+        setNavLinks(NAV_LINKS);
+        return;
+      }
 
       const hiddenHrefs = [
         ...(session.isSimpleInvite ? SIMPLE_INVITE_HIDDEN_HREFS : []),
