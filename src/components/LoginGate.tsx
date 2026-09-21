@@ -171,6 +171,13 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
             }}
           />
 
+          {/* Title on the flap, above the seal. A sibling of the clipped glass
+              layer (not a child) so the clip-path doesn't crop it, and inside
+              the flap so it flips away with it when the envelope opens. */}
+          <p className="absolute inset-x-0 top-5 whitespace-nowrap sm:top-6 text-center font-primary text-base text-primary sm:text-lg">
+            Vinally &amp; Rushi&apos;s Wedding
+          </p>
+
           {/* Wax seal, centered on the flap's own point */}
           <div className="absolute bottom-0 left-1/2 flex h-16 w-16 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full bg-gradient-to-b from-quinary/90 via-quinary to-[#9c7a45] shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),inset_0_-2px_3px_rgba(0,0,0,0.25),0_4px_10px_rgba(0,0,0,0.25)]">
             <Monogram className="h-12 w-12 text-tertiary drop-shadow-sm" />
@@ -189,11 +196,13 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
           }}
         >
           <div className="relative z-10 flex flex-col items-center gap-3 px-6 pb-6 pt-9 text-center">
-            <p className="font-primary text-sm leading-snug text-primary sm:text-base">
-              Please enter your name or email to view your invitation to
-              <br />
-              Vinally &amp; Rushi&apos;s Wedding
-            </p>
+            <div className="flex flex-col gap-2 font-secondary text-[13px] leading-snug text-primary sm:text-sm">
+              <p>Please enter the first and last name or email of one member of your party below.</p>
+              <p className="text-xs sm:text-[13px]">
+                If you&apos;re responding for you or your family, you&apos;ll be able to RSVP for
+                your entire group.
+              </p>
+            </div>
 
             {/* Input and submit sit on one row to keep the envelope's
                 bottom section shallow and closer to a real envelope's
@@ -225,6 +234,10 @@ export default function LoginGate({ onUnlock }: LoginGateProps) {
                 {isSubmitting ? "..." : "Enter"}
               </button>
             </div>
+
+            <p className="-mt-1 text-[10px] leading-tight text-primary/60">
+              Ex. Adam Smith (not The Smith Family or Dr. &amp; Mrs. Smith)
+            </p>
 
             {error && (
               <p className="-mt-1 max-w-[260px] text-xs tracking-wide text-red-500/80 font-bold">
