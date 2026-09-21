@@ -10,6 +10,7 @@ type GuestRow = {
   simple_invite: boolean;
   hide_rsvp: boolean;
   lock_rsvp: boolean;
+  in_memoriam: boolean | null;
 };
 
 export async function POST(request: Request) {
@@ -24,16 +25,18 @@ export async function POST(request: Request) {
 
   const { data: guests, error } = await supabaseServer
     .from("guests")
-    .select("id, full_name, email, household_id, simple_invite, hide_rsvp, lock_rsvp");
+    .select("id, full_name, email, household_id, simple_invite, hide_rsvp, lock_rsvp, in_memoriam");
 
   if (error) {
     return NextResponse.json({ match: null }, { status: 500 });
   }
 
+  // In-memoriam guests can't log in (and shouldn't make a name look ambiguous).
   const matches = (guests as GuestRow[] | null)?.filter(
     (g) =>
-      g.full_name.trim().toLowerCase() === normalized ||
-      (g.email && g.email.trim().toLowerCase() === normalized)
+      g.in_memoriam !== true &&
+      (g.full_name.trim().toLowerCase() === normalized ||
+        (g.email && g.email.trim().toLowerCase() === normalized))
   ) ?? [];
 
   if (matches.length > 1) {

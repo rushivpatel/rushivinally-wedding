@@ -12,6 +12,7 @@ type SummaryGuest = {
   side: string | null;
   relationLabel: string | null;
   isChild: boolean;
+  inMemoriam: boolean;
   dietary: string | null;
   message: string | null;
   openSlots: number | null;
@@ -34,6 +35,7 @@ type Person = {
   name: string;
   isSlot: boolean;
   isChild: boolean;
+  inMemoriam: boolean;
   answers: Record<string, Status>;
 };
 
@@ -68,6 +70,7 @@ function progress(person: Person): "not-started" | "partial" | "complete" {
 
 function personMatches(person: Person, filter: Filter): boolean {
   if (filter === "all") return true;
+  if (person.inMemoriam) return false;
   const values = Object.values(person.answers);
   if (filter === "attending") return values.includes("attending");
   if (filter === "declined") return values.length > 0 && values.every((v) => v === "not_attending");
@@ -189,6 +192,7 @@ export default function MasterSummary({
               name: slot.fullName,
               isSlot: true,
               isChild: false,
+              inMemoriam: false,
               answers: slotAnswers,
             });
           }
@@ -198,7 +202,9 @@ export default function MasterSummary({
             name: guest.fullName,
             isSlot: false,
             isChild: guest.isChild,
-            answers,
+            inMemoriam: guest.inMemoriam,
+            // In-memoriam guests have no responses to track.
+            answers: guest.inMemoriam ? {} : answers,
           });
         }
       }
@@ -227,8 +233,12 @@ export default function MasterSummary({
     [groups]
   );
 
-  // Children stay in the guest list below but count as zero everywhere.
-  const countedPeople = useMemo(() => allPeople.filter((p) => !p.isChild), [allPeople]);
+  // Children and in-memoriam guests stay in the guest list below but count as
+  // zero everywhere. (The master login itself is never sent by the API.)
+  const countedPeople = useMemo(
+    () => allPeople.filter((p) => !p.isChild && !p.inMemoriam),
+    [allPeople]
+  );
 
   const stats = useMemo(() => {
     const perEvent = eventSlugs.map((slug) => {
@@ -252,7 +262,7 @@ export default function MasterSummary({
       if (Object.keys(person.answers).length > 0) progressCounts[progress(person)]++;
     }
 
-    const guests = (data?.guests ?? []).filter((g) => !g.isChild);
+    const guests = (data?.guests ?? []).filter((g) => !g.isChild && !g.inMemoriam);
     const households = new Set(groups.map((g) => g.key)).size;
     return {
       perEvent,
@@ -446,10 +456,17 @@ export default function MasterSummary({
                         index === 0 && !group.host ? "border-t border-primary/10" : ""
                       }
                     >
-                      <td className={`py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""}`}>
+                      <td
+                        className={`py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""} ${
+                          person.inMemoriam ? "text-primary/40" : ""
+                        }`}
+                      >
                         {person.isSlot && <span className="mr-1 text-primary/30">↳</span>}
                         {person.name}
                         {person.isChild && <span className="ml-1 text-[10px] text-primary/50">(child)</span>}
+                        {person.inMemoriam && (
+                          <span className="ml-1 text-[10px] text-primary/40">(in memoriam)</span>
+                        )}
                         {!person.isSlot && index === 0 && (group.relation || group.side) && (
                           <span className="ml-2 text-[11px] text-primary/40">
                             {[group.side, group.relation].filter(Boolean).join(" · ")}

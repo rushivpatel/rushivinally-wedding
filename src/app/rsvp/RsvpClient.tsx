@@ -24,6 +24,7 @@ type HouseholdGuest = {
   fullName: string;
   message: string | null;
   dietary: string | null;
+  inMemoriam: boolean;
 };
 type Invite = { guestId: string; eventSlug: string; status: InviteStatus | null };
 type Slot = { slotId: string; slotNumber: number; fullName: string };
@@ -34,6 +35,8 @@ type ResponseRow = {
   key: string;
   fullName: string;
   status: InviteStatus | null;
+  /** Passed away, still listed out of respect: name only, no response control. */
+  inMemoriam?: boolean;
   save: (eventSlug: string, value: InviteStatus) => void | Promise<void>;
 };
 
@@ -112,6 +115,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
                   key: guest.guestId,
                   fullName: guest.fullName,
                   status: invite.status,
+                  inMemoriam: guest.inMemoriam,
                   save: (eventSlug: string, value: InviteStatus) =>
                     handleStatusChange(guest.guestId, eventSlug, value),
                 };
@@ -314,10 +318,17 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
 
             {responses.map((response) => (
               <Fragment key={response.key}>
-                <p className="font-secondary text-base text-primary sm:text-center">
+                <p
+                  className={`font-secondary text-base sm:text-center ${
+                    response.inMemoriam ? "text-primary/40" : "text-primary"
+                  }`}
+                >
                   {response.fullName}
                 </p>
-                {session.lockRsvp ? (
+                {response.inMemoriam ? (
+                  // Keeps the grid cell (and row height) but shows nothing.
+                  <span aria-hidden className="h-10" />
+                ) : session.lockRsvp ? (
                   <p className="font-secondary text-sm text-primary/50 sm:justify-self-center">
                     {response.status ? STATUS_LABELS[response.status] : "—"}
                   </p>

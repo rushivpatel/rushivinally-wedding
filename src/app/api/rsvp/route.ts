@@ -20,8 +20,8 @@ export async function GET(request: Request) {
   }
 
   const householdQuery = self.household_id
-    ? supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions").eq("household_id", self.household_id)
-    : supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions").eq("id", guestId);
+    ? supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions, in_memoriam").eq("household_id", self.household_id)
+    : supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions, in_memoriam").eq("id", guestId);
 
   const { data: householdGuests, error: guestsError } = await householdQuery;
 
@@ -90,6 +90,7 @@ export async function GET(request: Request) {
       fullName: g.full_name,
       message: g.message,
       dietary: g.dietary_restrictions,
+      inMemoriam: g.in_memoriam === true,
     })),
     invites: (invites ?? []).map((row) => ({
       guestId: row.guest_id,

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     supabaseServer
       .from("guests")
       .select(
-        "id, household_id, full_name, side, relation_label, is_child, dietary_restrictions, message, open_slots, digital_save_the_date_sent, physical_save_the_date_sent, invite_sent"
+        "id, household_id, full_name, side, relation_label, is_child, in_memoriam, dietary_restrictions, message, open_slots, digital_save_the_date_sent, physical_save_the_date_sent, invite_sent"
       )
       .or(`household_id.is.null,household_id.neq.${MASTER_HOUSEHOLD}`),
     supabaseServer.from("guest_event_invites").select("guest_id, status, events(slug)"),
@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       side: g.side as string | null,
       relationLabel: g.relation_label as string | null,
       isChild: g.is_child as boolean,
+      inMemoriam: g.in_memoriam === true,
       dietary: g.dietary_restrictions as string | null,
       message: g.message as string | null,
       openSlots: g.open_slots as number | null,

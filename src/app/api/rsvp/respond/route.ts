@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   const { data: guestRow, error: guestError } = await supabaseServer
     .from("guests")
-    .select("lock_rsvp")
+    .select("lock_rsvp, in_memoriam")
     .eq("id", guestId)
     .maybeSingle();
 
@@ -25,6 +25,10 @@ export async function POST(request: Request) {
 
   if (guestRow.lock_rsvp) {
     return NextResponse.json({ error: "RSVPs are locked" }, { status: 403 });
+  }
+
+  if (guestRow.in_memoriam) {
+    return NextResponse.json({ error: "No response can be recorded" }, { status: 403 });
   }
 
   const { data: event, error: eventError } = await supabaseServer
