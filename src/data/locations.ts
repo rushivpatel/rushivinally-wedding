@@ -30,6 +30,7 @@ export type Location = {
   detail1?: string;
   detail2?: string;
   detail3?: string;
+  link?: string;
 };
 
 type LocationRow = {
@@ -44,6 +45,7 @@ type LocationRow = {
   detail1: string | null;
   detail2: string | null;
   detail3: string | null;
+  link: string | null;
 };
 
 export async function getLocations(): Promise<Location[]> {
@@ -61,5 +63,6 @@ export async function getLocations(): Promise<Location[]> {
     detail1: row.detail1 ?? undefined,
     detail2: row.detail2 ?? undefined,
     detail3: row.detail3 ?? undefined,
+    link: row.link ?? undefined,
   }));
 }

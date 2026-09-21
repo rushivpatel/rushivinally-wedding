@@ -40,7 +40,7 @@ export default async function TravelPage() {
           <div className="space-y-8">
             {airports.map((airport) => (
               <div key={airport.id} className="space-y-2">
-                <h3 className="font-primary text-xl text-primary font-bold">{airport.name}</h3>
+                <h3 className="font-secondary text-xl text-primary font-bold">{airport.name}</h3>
                 <p className="text-sm text-primary/70">{airport.address}</p>
                 {airport.detail1 && <p className="text-sm text-primary/60">{airport.detail1}</p>}
                 {airport.detail2 && <p className="text-sm text-primary/60">{airport.detail2}</p>}
