@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WeddingEvent } from "@/data/weddingDetails";
 
 type Status = "attending" | "not_attending" | "undecided" | null;
@@ -9,6 +9,7 @@ type SummaryGuest = {
   guestId: string;
   householdId: string | null;
   fullName: string;
+  email: string | null;
   side: string | null;
   relationLabel: string | null;
   isChild: boolean;
@@ -29,13 +30,18 @@ type SummaryData = {
 };
 
 /** One answering person: a guest, or a named open-invite slot. `answers` has
- *  a key only for events the person is invited to (null = not answered yet). */
+ *  a key only for events the person is invited to (null = not answered yet).
+ *  Mailing fields are null for slots — they aren't guest records of their own. */
 type Person = {
   key: string;
   name: string;
   isSlot: boolean;
   isChild: boolean;
   inMemoriam: boolean;
+  email: string | null;
+  digitalSent: boolean | null;
+  physicalSent: boolean | null;
+  inviteSent: boolean | null;
   answers: Record<string, Status>;
 };
 
@@ -84,13 +90,14 @@ const CELL: Record<string, { glyph: string; className: string; title: string }> 
   pending: { glyph: "…", className: "text-primary/30", title: "Invited — no response yet" },
 };
 
-function StatCard({ value, label, sub }: { value: string | number; label: string; sub?: string }) {
-  return (
-    <div className="liquid-glass-lite rounded-2xl px-4 py-3">
-      <p className="font-primary text-3xl text-primary">{value}</p>
-      <p className="text-[11px] uppercase tracking-widest text-primary/70">{label}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-primary/50">{sub}</p>}
-    </div>
+/** Small yes/no indicator for the mailing columns. null = not applicable
+ *  (an open-invite seat, which has no guest record of its own to mail). */
+function BoolCell({ value }: { value: boolean | null }) {
+  if (value === null) return <span className="text-primary/20">–</span>;
+  return value ? (
+    <span className="font-bold text-primary">✓</span>
+  ) : (
+    <span className="text-primary/25">—</span>
   );
 }
 
@@ -111,6 +118,7 @@ export default function MasterSummary({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [side, setSide] = useState("all");
+  const [relation, setRelation] = useState("all");
 
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -142,7 +150,15 @@ export default function MasterSummary({
     setReloadKey((key) => key + 1);
   }
 
+  function handleSideChange(value: string) {
+    setSide(value);
+    // The relation options depend on the selected side, so a stale pick
+    // from the other side would otherwise silently filter out everyone.
+    setRelation("all");
+  }
+
   const eventSlugs = useMemo(() => weddingEvents.map((e) => e.eventid), [weddingEvents]);
+  const columnCount = eventSlugs.length + 7; // Side, Relation, Guest, Email, Digital, Physical, Invite
 
   const groups: Group[] = useMemo(() => {
     if (!data) return [];
@@ -193,6 +209,10 @@ export default function MasterSummary({
               isSlot: true,
               isChild: false,
               inMemoriam: false,
+              email: null,
+              digitalSent: null,
+              physicalSent: null,
+              inviteSent: null,
               answers: slotAnswers,
             });
           }
@@ -203,6 +223,10 @@ export default function MasterSummary({
             isSlot: false,
             isChild: guest.isChild,
             inMemoriam: guest.inMemoriam,
+            email: guest.email,
+            digitalSent: guest.digitalSent,
+            physicalSent: guest.physicalSent,
+            inviteSent: guest.inviteSent,
             // In-memoriam guests have no responses to track.
             answers: guest.inMemoriam ? {} : answers,
           });
@@ -226,61 +250,28 @@ export default function MasterSummary({
     return result.sort((a, b) => a.label.localeCompare(b.label));
   }, [data]);
 
-  const allPeople = useMemo(() => groups.flatMap((g) => g.people), [groups]);
-
   const sides = useMemo(
     () => [...new Set(groups.map((g) => g.side).filter((s): s is string => Boolean(s)))].sort(),
     [groups]
   );
 
-  // Children and in-memoriam guests stay in the guest list below but count as
-  // zero everywhere. (The master login itself is never sent by the API.)
-  const countedPeople = useMemo(
-    () => allPeople.filter((p) => !p.isChild && !p.inMemoriam),
-    [allPeople]
-  );
-
-  const stats = useMemo(() => {
-    const perEvent = eventSlugs.map((slug) => {
-      const counts = { invited: 0, attending: 0, not_attending: 0, undecided: 0, pending: 0 };
-      for (const person of countedPeople) {
-        if (!(slug in person.answers)) continue;
-        counts.invited++;
-        const status = person.answers[slug];
-        if (status === null) counts.pending++;
-        else counts[status]++;
-      }
-      const unnamed = groups.reduce(
-        (sum, g) => (g.host?.eventSlugs.includes(slug) ? sum + g.host.unnamed : sum),
-        0
-      );
-      return { slug, ...counts, unnamed };
-    });
-
-    const progressCounts = { "not-started": 0, partial: 0, complete: 0 };
-    for (const person of countedPeople) {
-      if (Object.keys(person.answers).length > 0) progressCounts[progress(person)]++;
-    }
-
-    const guests = (data?.guests ?? []).filter((g) => !g.isChild && !g.inMemoriam);
-    const households = new Set(groups.map((g) => g.key)).size;
-    return {
-      perEvent,
-      progressCounts,
-      households,
-      people: countedPeople.length,
-      unnamedSeats: groups.reduce((sum, g) => sum + (g.host?.unnamed ?? 0), 0),
-      digital: guests.filter((g) => g.digitalSent).length,
-      physical: guests.filter((g) => g.physicalSent).length,
-      invite: guests.filter((g) => g.inviteSent).length,
-      guestTotal: guests.length,
-    };
-  }, [countedPeople, groups, data, eventSlugs]);
+  const relations = useMemo(() => {
+    if (side === "all") return [];
+    return [
+      ...new Set(
+        groups
+          .filter((g) => g.side === side)
+          .map((g) => g.relation)
+          .filter((r): r is string => Boolean(r))
+      ),
+    ].sort();
+  }, [groups, side]);
 
   const filteredGroups = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return groups.filter((group) => {
       if (side !== "all" && group.side !== side) return false;
+      if (side !== "all" && relation !== "all" && group.relation !== relation) return false;
       if (needle && !group.search.includes(needle)) return false;
       if (filter === "all") return true;
       if (group.people.some((p) => personMatches(p, filter))) return true;
@@ -288,7 +279,91 @@ export default function MasterSummary({
       // count it as "not started".
       return filter === "not-started" && group.host !== null && group.people.length === 0;
     });
-  }, [groups, search, filter, side]);
+  }, [groups, search, filter, side, relation]);
+
+  // Rows, flattened and nested-clustered: side first (Vinally's side, then
+  // Rushi's, per the fixed order below), then relation_label within each
+  // side. Each level's label is shown once per contiguous block via a
+  // single row-spanning cell rather than repeated on every row.
+  const { rows, sideStarts, relationStarts } = useMemo(() => {
+    const SIDE_ORDER: Record<string, number> = { vinally: 0, rushi: 1 };
+    const sideRank = (key: string) => (key ? SIDE_ORDER[key.toLowerCase()] ?? 2 : 3);
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const bySide = new Map<string, Group[]>();
+    const sideOrder: string[] = [];
+    for (const group of filteredGroups) {
+      const key = group.side ?? "";
+      if (!bySide.has(key)) {
+        bySide.set(key, []);
+        sideOrder.push(key);
+      }
+      bySide.get(key)!.push(group);
+    }
+    sideOrder.sort((a, b) => {
+      const ra = sideRank(a);
+      const rb = sideRank(b);
+      return ra !== rb ? ra - rb : a.localeCompare(b);
+    });
+
+    type Row =
+      | { type: "host"; group: Group }
+      | { type: "person"; group: Group; person: Person; personIndex: number }
+      | { type: "unnamed"; group: Group };
+
+    const flat: Row[] = [];
+    const sStarts = new Map<number, { label: string; rowSpan: number }>();
+    const rStarts = new Map<number, { label: string; rowSpan: number }>();
+
+    for (const sideKey of sideOrder) {
+      const sideStartIndex = flat.length;
+
+      // Cluster this side's households by relation, same pattern as side.
+      const byRelation = new Map<string, Group[]>();
+      const relationOrder: string[] = [];
+      for (const group of bySide.get(sideKey)!) {
+        const key = group.relation ?? "";
+        if (!byRelation.has(key)) {
+          byRelation.set(key, []);
+          relationOrder.push(key);
+        }
+        byRelation.get(key)!.push(group);
+      }
+      relationOrder.sort((a, b) => {
+        if (!a && b) return 1;
+        if (a && !b) return -1;
+        return a.localeCompare(b);
+      });
+
+      for (const relationKey of relationOrder) {
+        const relationStartIndex = flat.length;
+        for (const group of byRelation.get(relationKey)!) {
+          if (group.host) flat.push({ type: "host", group });
+          group.people.forEach((person, personIndex) =>
+            flat.push({ type: "person", group, person, personIndex })
+          );
+          if (group.host && group.host.unnamed > 0) flat.push({ type: "unnamed", group });
+        }
+        const relationRowSpan = flat.length - relationStartIndex;
+        if (relationRowSpan > 0) {
+          rStarts.set(relationStartIndex, {
+            label: relationKey || "No relation listed",
+            rowSpan: relationRowSpan,
+          });
+        }
+      }
+
+      const sideRowSpan = flat.length - sideStartIndex;
+      if (sideRowSpan > 0) {
+        sStarts.set(sideStartIndex, {
+          label: sideKey ? capitalize(sideKey) : "No side listed",
+          rowSpan: sideRowSpan,
+        });
+      }
+    }
+
+    return { rows: flat, sideStarts: sStarts, relationStarts: rStarts };
+  }, [filteredGroups]);
 
   const messages = (data?.guests ?? []).filter((g) => g.message && g.message.trim());
   const dietary = (data?.guests ?? []).filter((g) => g.dietary && g.dietary.trim());
@@ -307,8 +382,6 @@ export default function MasterSummary({
     );
   }
 
-  const nameOf = (slug: string) => weddingEvents.find((e) => e.eventid === slug)?.name ?? slug;
-
   return (
     <div className="flex flex-col gap-12 font-secondary text-primary">
       <div className="flex items-center justify-between gap-4">
@@ -321,65 +394,6 @@ export default function MasterSummary({
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
-
-      {/* Headline numbers */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard value={stats.people} label="Guests answering" sub={`${stats.households} households`} />
-        <StatCard
-          value={stats.progressCounts.complete}
-          label="Fully answered"
-          sub={`${Math.round((stats.progressCounts.complete / Math.max(stats.people, 1)) * 100)}% of guests`}
-        />
-        <StatCard value={stats.progressCounts.partial} label="Partly answered" />
-        <StatCard value={stats.progressCounts["not-started"]} label="Not started" />
-      </div>
-
-      {/* Per event */}
-      <section>
-        <SectionTitle>By event</SectionTitle>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr className="border-b border-primary/15 text-left text-[11px] uppercase tracking-widest text-primary/60">
-                <th className="py-2 pr-3 font-normal">Event</th>
-                <th className="px-2 text-center font-normal">Invited</th>
-                <th className="px-2 text-center font-normal">Attending</th>
-                <th className="px-2 text-center font-normal">Not</th>
-                <th className="px-2 text-center font-normal">Maybe</th>
-                <th className="px-2 text-center font-normal">Pending</th>
-                <th className="px-2 text-center font-normal" title="Seats on open invites nobody has named yet">
-                  Unnamed seats
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.perEvent.map((row) => (
-                <tr key={row.slug} className="border-b border-primary/10">
-                  <td className="py-2 pr-3">{nameOf(row.slug)}</td>
-                  <td className="px-2 text-center">{row.invited}</td>
-                  <td className="px-2 text-center font-bold">
-                    {row.attending}
-                  </td>
-                  <td className="px-2 text-center text-primary/60">{row.not_attending}</td>
-                  <td className="px-2 text-center text-quinary">{row.undecided}</td>
-                  <td className="px-2 text-center text-primary/50">{row.pending}</td>
-                  <td className="px-2 text-center text-primary/50">{row.unnamed || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Mailing tracker */}
-      <section>
-        <SectionTitle>Mailings</SectionTitle>
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard value={`${stats.digital}/${stats.guestTotal}`} label="Digital save-the-date" />
-          <StatCard value={`${stats.physical}/${stats.guestTotal}`} label="Physical save-the-date" />
-          <StatCard value={`${stats.invite}/${stats.guestTotal}`} label="Invite sent" />
-        </div>
-      </section>
 
       {/* Guest matrix */}
       <section>
@@ -407,7 +421,7 @@ export default function MasterSummary({
           {sides.length > 0 && (
             <select
               value={side}
-              onChange={(e) => setSide(e.target.value)}
+              onChange={(e) => handleSideChange(e.target.value)}
               className="h-9 rounded-full border border-primary/30 bg-transparent px-3 text-base text-primary focus:border-quinary focus:outline-none sm:text-sm"
             >
               <option value="all">Both sides</option>
@@ -418,16 +432,42 @@ export default function MasterSummary({
               ))}
             </select>
           )}
+          {side !== "all" && relations.length > 0 && (
+            <select
+              value={relation}
+              onChange={(e) => setRelation(e.target.value)}
+              className="h-9 rounded-full border border-primary/30 bg-transparent px-3 text-base text-primary focus:border-quinary focus:outline-none sm:text-sm"
+            >
+              <option value="all">All relations</option>
+              {relations.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          )}
           <p className="text-xs text-primary/50">
             ✓ attending · ✗ not attending · ? undecided · … no response · blank = not invited
           </p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-primary/15 align-bottom text-[10px] uppercase leading-tight tracking-wider text-primary/60">
-                <th className="py-2 pr-3 text-left font-normal">Guest</th>
+                <th className="w-16 py-2 pr-3 text-left font-normal">Side</th>
+                <th className="w-32 py-2 pr-3 text-left font-normal">Relation</th>
+                <th className="whitespace-nowrap w-[1%] py-2 pr-3 text-left font-normal">Guest</th>
+                <th className="px-2 text-left font-normal">Email</th>
+                <th className="w-14 px-1 text-center font-normal" title="Digital save-the-date sent">
+                  Digital
+                </th>
+                <th className="w-14 px-1 text-center font-normal" title="Physical save-the-date sent">
+                  Physical
+                </th>
+                <th className="w-14 px-1 text-center font-normal" title="Invite sent">
+                  Invite
+                </th>
                 {weddingEvents.map((event) => (
                   <th key={event.eventid} className="w-16 px-1 text-center font-normal" title={event.name}>
                     {event.name}
@@ -436,66 +476,104 @@ export default function MasterSummary({
               </tr>
             </thead>
             <tbody>
-              {filteredGroups.map((group) => (
-                <Fragment key={group.key}>
-                  {group.host && (
-                    <tr className="border-t border-primary/10">
-                      <td className="py-1.5 pr-3" colSpan={eventSlugs.length + 1}>
-                        <span className="font-bold">{group.host.name}</span>
+              {rows.map((row, rowIndex) => {
+                const sideStart = sideStarts.get(rowIndex);
+                const sideCell = sideStart && (
+                  <td
+                    rowSpan={sideStart.rowSpan}
+                    className="py-1.5 pr-3 align-top text-xs font-bold uppercase tracking-wide text-primary/70"
+                  >
+                    {sideStart.label}
+                  </td>
+                );
+
+                const relationStart = relationStarts.get(rowIndex);
+                const relationCell = relationStart && (
+                  <td
+                    rowSpan={relationStart.rowSpan}
+                    className="py-1.5 pr-3 align-top text-xs font-bold uppercase tracking-wide text-quinary"
+                  >
+                    {relationStart.label}
+                  </td>
+                );
+
+                if (row.type === "host") {
+                  return (
+                    <tr key={`${row.group.key}-host`} className="border-t border-primary/10">
+                      {sideCell}
+                      {relationCell}
+                      <td className="py-1.5 pr-3" colSpan={columnCount - 2}>
+                        <span className="font-bold">{row.group.host!.name}</span>
                         <span className="ml-2 text-xs text-primary/50">
-                          open invite · {group.host.seats - group.host.unnamed} of {group.host.seats} seats named
-                          {group.relation ? ` · ${group.relation}` : ""}
+                          open invite · {row.group.host!.seats - row.group.host!.unnamed} of{" "}
+                          {row.group.host!.seats} seats named
                         </span>
                       </td>
                     </tr>
-                  )}
-                  {group.people.map((person, index) => (
-                    <tr
-                      key={person.key}
-                      className={
-                        index === 0 && !group.host ? "border-t border-primary/10" : ""
-                      }
-                    >
+                  );
+                }
+
+                if (row.type === "unnamed") {
+                  return (
+                    <tr key={`${row.group.key}-unnamed`}>
+                      {sideCell}
+                      {relationCell}
                       <td
-                        className={`py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""} ${
-                          person.inMemoriam ? "text-primary/40" : ""
-                        }`}
+                        className="py-1 pl-4 pr-3 text-xs italic text-primary/40"
+                        colSpan={columnCount - 2}
                       >
-                        {person.isSlot && <span className="mr-1 text-primary/30">↳</span>}
-                        {person.name}
-                        {person.isChild && <span className="ml-1 text-[10px] text-primary/50">(child)</span>}
-                        {person.inMemoriam && (
-                          <span className="ml-1 text-[10px] text-primary/40">(in memoriam)</span>
-                        )}
-                        {!person.isSlot && index === 0 && (group.relation || group.side) && (
-                          <span className="ml-2 text-[11px] text-primary/40">
-                            {[group.side, group.relation].filter(Boolean).join(" · ")}
-                          </span>
-                        )}
-                      </td>
-                      {eventSlugs.map((slug) => {
-                        const answer = person.answers[slug];
-                        const cell = slug in person.answers ? CELL[answer ?? "pending"] : null;
-                        return (
-                          <td key={slug} className="px-1 text-center" title={cell?.title}>
-                            {cell && <span className={cell.className}>{cell.glyph}</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                  {group.host && group.host.unnamed > 0 && (
-                    <tr>
-                      <td className="py-1 pl-4 pr-3 text-xs italic text-primary/40" colSpan={eventSlugs.length + 1}>
-                        ↳ {group.host.unnamed} seat{group.host.unnamed === 1 ? "" : "s"} not named yet
+                        ↳ {row.group.host!.unnamed} seat{row.group.host!.unnamed === 1 ? "" : "s"} not
+                        named yet
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
-              {filteredGroups.length === 0 && (
+                  );
+                }
+
+                const { person, personIndex, group } = row;
+                return (
+                  <tr
+                    key={person.key}
+                    className={personIndex === 0 && !group.host ? "border-t border-primary/10" : ""}
+                  >
+                    {sideCell}
+                    {relationCell}
+                    <td
+                      className={`whitespace-nowrap py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""} ${
+                        person.inMemoriam ? "text-primary/40" : ""
+                      }`}
+                    >
+                      {person.isSlot && <span className="mr-1 text-primary/30">↳</span>}
+                      {person.name}
+                      {person.isChild && <span className="ml-1 text-[10px] text-primary/50">(child)</span>}
+                      {person.inMemoriam && (
+                        <span className="ml-1 text-[10px] text-primary/40">(in memoriam)</span>
+                      )}
+                    </td>
+                    <td className="truncate px-2 text-xs text-primary/70">{person.email ?? ""}</td>
+                    <td className="px-1 text-center">
+                      <BoolCell value={person.digitalSent} />
+                    </td>
+                    <td className="px-1 text-center">
+                      <BoolCell value={person.physicalSent} />
+                    </td>
+                    <td className="px-1 text-center">
+                      <BoolCell value={person.inviteSent} />
+                    </td>
+                    {eventSlugs.map((slug) => {
+                      const answer = person.answers[slug];
+                      const cell = slug in person.answers ? CELL[answer ?? "pending"] : null;
+                      return (
+                        <td key={slug} className="px-1 text-center" title={cell?.title}>
+                          {cell && <span className={cell.className}>{cell.glyph}</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
                 <tr>
-                  <td className="py-6 text-center text-primary/50" colSpan={eventSlugs.length + 1}>
+                  <td className="py-6 text-center text-primary/50" colSpan={columnCount}>
                     Nobody matches those filters.
                   </td>
                 </tr>

@@ -222,11 +222,15 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   }
 
   if (loading) {
-    return <p className="font-secondary text-primary/60">Loading your invitation...</p>;
+    return <p className="mx-auto w-full max-w-4xl font-secondary text-primary/60">Loading your invitation...</p>;
   }
 
   if (!session) {
-    return <p className="font-secondary text-primary/60">Please log in to view your RSVP.</p>;
+    return (
+      <p className="mx-auto w-full max-w-4xl font-secondary text-primary/60">
+        Please log in to view your RSVP.
+      </p>
+    );
   }
 
   if (session.householdId === MASTER_HOUSEHOLD) {
@@ -234,11 +238,17 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   }
 
   if (session.hideRsvp) {
-    return <p className="font-secondary text-primary/60">This page isn&apos;t available for your invitation.</p>;
+    return (
+      <p className="mx-auto w-full max-w-4xl font-secondary text-primary/60">
+        This page isn&apos;t available for your invitation.
+      </p>
+    );
   }
 
+  // Narrower than the page's own container (which is sized for the master
+  // account's wide table) — a personal RSVP reads better at the old width.
   return (
-    <div className="flex flex-col gap-16">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-16">
       {session.lockRsvp && (
         <p className="font-secondary text-2xl text-primary">
           RSVP&apos;s are now locked. If you are unable to attend an event, please
