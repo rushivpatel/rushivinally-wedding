@@ -537,11 +537,7 @@ export default function MasterSummary({
                   >
                     {sideCell}
                     {relationCell}
-                    <td
-                      className={`whitespace-nowrap py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""} ${
-                        person.inMemoriam ? "text-primary/40" : ""
-                      }`}
-                    >
+                    <td className={`whitespace-nowrap py-1.5 pr-3 ${person.isSlot ? "pl-4" : ""}`}>
                       {person.isSlot && <span className="mr-1 text-primary/30">↳</span>}
                       {person.name}
                       {person.isChild && <span className="ml-1 text-[10px] text-primary/50">(child)</span>}

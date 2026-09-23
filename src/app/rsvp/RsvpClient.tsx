@@ -328,11 +328,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
 
             {responses.map((response) => (
               <Fragment key={response.key}>
-                <p
-                  className={`font-secondary text-base sm:text-center ${
-                    response.inMemoriam ? "text-primary/40" : "text-primary"
-                  }`}
-                >
+                <p className="font-secondary text-base text-primary sm:text-center">
                   {response.fullName}
                 </p>
                 {response.inMemoriam ? (
