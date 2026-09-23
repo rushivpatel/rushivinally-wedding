@@ -6,6 +6,30 @@ const MASTER_HOUSEHOLD = "master";
 
 type Status = "attending" | "not_attending" | "undecided" | null;
 
+const PAGE_SIZE = 1000;
+
+/** Supabase/PostgREST caps a single request at PAGE_SIZE rows — a plain
+ *  .select() on a table past that size silently comes back truncated, no
+ *  error. guest_event_invites crossed that line once Vinally's side was
+ *  imported (1435 rows), which is why some guests' RSVP cells on the
+ *  summary page were showing blank instead of "…" for events they were
+ *  actually invited to. This pages through with .range() until a page
+ *  comes back short, so every row is always included regardless of size. */
+async function fetchAll<T>(
+  query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+): Promise<{ data: T[]; error: unknown }> {
+  const all: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await query(from, from + PAGE_SIZE - 1);
+    if (error) return { data: all, error };
+    all.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return { data: all, error: null };
+}
+
 /** Everything the master RSVP summary needs, gated server-side on the
  *  requesting guest actually belonging to the master household (the client
  *  check is only for choosing what to render). Deliberately leaves out
@@ -27,15 +51,24 @@ export async function GET(request: Request) {
   }
 
   const [guestsRes, invitesRes, slotsRes, slotInvitesRes] = await Promise.all([
-    supabaseServer
-      .from("guests")
-      .select(
-        "id, household_id, full_name, email, side, relation_label, is_child, in_memoriam, dietary_restrictions, message, open_slots, digital_save_the_date_sent, physical_save_the_date_sent, invite_sent"
-      )
-      .or(`household_id.is.null,household_id.neq.${MASTER_HOUSEHOLD}`),
-    supabaseServer.from("guest_event_invites").select("guest_id, status, events(slug)"),
-    supabaseServer.from("guest_slots").select("id, guest_id, slot_number, full_name"),
-    supabaseServer.from("guest_slot_invites").select("slot_id, status, events(slug)"),
+    fetchAll((from, to) =>
+      supabaseServer
+        .from("guests")
+        .select(
+          "id, household_id, full_name, email, side, relation_label, is_child, in_memoriam, dietary_restrictions, message, open_slots, digital_save_the_date_sent, physical_save_the_date_sent, invite_sent"
+        )
+        .or(`household_id.is.null,household_id.neq.${MASTER_HOUSEHOLD}`)
+        .range(from, to)
+    ),
+    fetchAll((from, to) =>
+      supabaseServer.from("guest_event_invites").select("guest_id, status, events(slug)").range(from, to)
+    ),
+    fetchAll((from, to) =>
+      supabaseServer.from("guest_slots").select("id, guest_id, slot_number, full_name").range(from, to)
+    ),
+    fetchAll((from, to) =>
+      supabaseServer.from("guest_slot_invites").select("slot_id, status, events(slug)").range(from, to)
+    ),
   ]);
 
   if (guestsRes.error || invitesRes.error || slotsRes.error || slotInvitesRes.error) {
