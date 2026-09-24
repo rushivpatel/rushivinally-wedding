@@ -1,6 +1,10 @@
 import { getWeddingEvents } from "@/data/weddingDetails";
 import ScheduleClient from "./ScheduleClient";
 
+// Events come straight from Supabase — render on every request so an edit
+// there (like a segment time change) shows up without a redeploy.
+export const dynamic = "force-dynamic";
+
 export default async function SchedulePage() {
   const weddingEvents = await getWeddingEvents();
 

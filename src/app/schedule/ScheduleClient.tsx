@@ -117,6 +117,12 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                   {event.name}
                 </h2>
 
+                {event.eventid === "wedding" && (
+                  <p className="font-secondary text-lg italic text-notify">
+                    Kindly plan to arrive between 8:30–8:45 AM
+                  </p>
+                )}
+
                 {event.segments.length > 0 ? (
                   <div className="space-y-1">
                     {event.segments.map((segment) => (
@@ -128,6 +134,12 @@ export default function ScheduleClient({ weddingEvents }: ScheduleClientProps) {
                 ) : (
                   <p className="font-secondary text-lg text-primary">
                     {formatEventTime(event.dateTime, event.timezone)}
+                  </p>
+                )}
+
+                {event.eventid === "haldi-pithi" && (
+                  <p className="font-secondary text-lg italic text-notify">
+                    Lunch will be served alongside the Pithi ceremony
                   </p>
                 )}
 

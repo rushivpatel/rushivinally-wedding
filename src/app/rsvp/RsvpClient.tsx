@@ -250,7 +250,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-16">
       {session.lockRsvp && (
-        <p className="font-secondary text-2xl text-primary">
+        <p className="font-secondary text-2xl text-notify">
           RSVP&apos;s are now locked. If you are unable to attend an event, please
           contact Vinally or Rushi directly.
         </p>
@@ -259,7 +259,7 @@ export default function RsvpClient({ weddingEvents }: RsvpClientProps) {
       {openSlots ? (
         <div>
           <h2 className="font-primary text-xl text-quinary">Who&apos;s attending from your party?</h2>
-          <p className="mt-1 mb-4 font-secondary text-sm text-primary/70">
+          <p className="mt-1 mb-4 font-secondary text-sm text-notify">
             {session.lockRsvp
               ? "Your guest names are locked."
               : `Enter the name of each guest attending (up to ${openSlots}), then RSVP for them below.`}

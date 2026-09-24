@@ -10,6 +10,7 @@
   --color-tertiary: #EBE5D8;
   --color-quaternary: #ede6d8;
   --color-quinary: #b8965a;
+  --color-notify: #7a2333;
 
   --background: var(--color-tertiary);
   --foreground: var(--color-primary);
@@ -24,6 +25,7 @@
   --color-tertiary: var(--color-tertiary);
   --color-quaternary: var(--color-quaternary);
   --color-quinary: var(--color-quinary);
+  --color-notify: var(--color-notify);
 
   --font-primary: var(--font-primary);
   --font-secondary: var(--font-secondary);

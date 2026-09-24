@@ -24,7 +24,7 @@ export default async function AccommodationPage() {
           Hotels
         </h1>
 
-        <p className="mb-12 text-xl text-primary/70">
+        <p className="mb-12 text-xl text-notify">
           Working on hotel codes and additional options. Please reach out to Rushi or Vinally directly for any questions!
         </p>
 

@@ -44,7 +44,7 @@ export default async function TravelPage() {
                 <p className="text-sm text-primary/70">{airport.address}</p>
                 {airport.detail1 && <p className="text-sm text-primary/60">{airport.detail1}</p>}
                 {airport.detail2 && <p className="text-sm text-primary/60">{airport.detail2}</p>}
-                {airport.detail3 && <p className="text-sm text-primary/60">{airport.detail3}</p>}
+                {airport.detail3 && <p className="text-sm text-notify">{airport.detail3}</p>}
               </div>
             ))}
           </div>
