@@ -20,7 +20,11 @@ export async function GET(request: Request) {
   }
 
   const householdQuery = self.household_id
-    ? supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions, in_memoriam").eq("household_id", self.household_id)
+    ? supabaseServer
+        .from("guests")
+        .select("id, full_name, message, dietary_restrictions, in_memoriam")
+        .eq("household_id", self.household_id)
+        .order("created_at")
     : supabaseServer.from("guests").select("id, full_name, message, dietary_restrictions, in_memoriam").eq("id", guestId);
 
   const { data: householdGuests, error: guestsError } = await householdQuery;
