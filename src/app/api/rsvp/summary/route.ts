@@ -58,6 +58,8 @@ export async function GET(request: Request) {
           "id, household_id, full_name, email, side, relation_label, is_child, in_memoriam, dietary_restrictions, message, open_slots, digital_save_the_date_sent, physical_save_the_date_sent, invite_sent"
         )
         .or(`household_id.is.null,household_id.neq.${MASTER_HOUSEHOLD}`)
+        .order("created_at")
+        .order("id")
         .range(from, to)
     ),
     fetchAll((from, to) =>
