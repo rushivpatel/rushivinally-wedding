@@ -24,10 +24,6 @@ export default async function AccommodationPage() {
           Hotels
         </h1>
 
-        <p className="mb-12 text-xl text-notify">
-          Working on hotel codes and additional options. Please reach out to Rushi or Vinally directly for any questions!
-        </p>
-
         <div className="flex flex-col gap-12">
           {hotels.map((hotel) => {
             const imagePath = `/images/hotels/${hotel.id}.jpg`;
